@@ -268,15 +268,53 @@
             <!-- 鷹架三階段按鈕 -->
             <div class="flex flex-wrap gap-1.5 bg-cream p-1.5 rounded-2xl border-2 border-meadow/60 w-full sm:w-auto justify-center">
               <button id="stage1Btn" onclick="setScaffoldStage(1)" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-1 bg-meadow text-cocoa shadow-sm">
-                <span>👀</span> 1.看筆順
+                <span>👀</span> 1.看筆順示範
               </button>
               <button id="stage2Btn" onclick="setScaffoldStage(2)" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-1 text-cocoa/75 hover:bg-white">
+                <span>🖍️</span> 2.虛線描紅
+              </button>
+              <button id="stage3Btn" onclick="setScaffoldStage(3)" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-1 text-cocoa/75 hover:bg-white">
+                <span>🌟</span> 3.獨立挑戰
+              </button>
+            </div>
+          </div>
+
           <!-- 階段提示說明條與筆順控制列 -->
           <div id="stageHintBanner" class="mb-3 px-3.5 py-2.5 rounded-2xl bg-skysoft/20 border border-skysoft/50 text-xs sm:text-sm font-bold text-cocoa flex flex-wrap items-center justify-between gap-2">
             <div class="flex flex-col gap-0.5">
               <span id="stageHintText">👀 第一步：觀察紅色起筆圓點與筆順動畫，看看字母怎麼長大！</span>
-              <span id="strokeStepDetail" class="text-xs font-extrabold text-coral">目前筆順：準備開始示範</span>
+              <div class="flex flex-wrap items-center gap-2">
+                <span id="strokeStepDetail" class="text-xs font-extrabold text-coral">正在示範：準備開始（共 3 筆）</span>
+              </div>
             </div>
+            <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+              <button id="animSpeedBtn" onclick="toggleAnimSpeed()" class="story-btn px-2.5 py-1.5 rounded-xl bg-meadow/40 hover:bg-meadow/65 border border-meadow text-xs font-extrabold text-cocoa shadow-sm">
+                🐢 慢速示範
+              </button>
+              <button id="stepStrokeBtn" onclick="playNextSingleStroke()" class="story-btn px-2.5 py-1.5 rounded-xl bg-sunshine/70 hover:bg-sunshine border border-[#E09F3E] text-xs font-extrabold text-cocoa shadow-sm">
+                👣 一步一步看 (第 1 筆)
+              </button>
+              <button id="replayStrokeBtn" onclick="replayStrokeAnimation()" class="story-btn px-2.5 py-1.5 rounded-xl bg-white hover:bg-sunshine/40 border border-skysoft text-xs font-extrabold text-cocoa shadow-sm">
+                ▶ 重新播放全部筆順
+              </button>
+              <button id="peekHintBtn" onclick="togglePeekHint()" class="hidden story-btn px-2.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-400 text-xs font-extrabold text-cocoa shadow-sm">
+                💡 偷看筆順提示
+              </button>
+            </div>
+          </div>
+
+          <!-- 四線格繪圖畫布容器 -->
+          <div id="canvasContainer" class="relative rounded-3xl overflow-hidden border-4 border-[#E6CCB2] bg-[#FFFDF9] shadow-inner">
+            <!-- 左側童話位置小圖示提示 -->
+            <div class="pointer-events-none absolute left-2 top-0 bottom-0 flex flex-col justify-between py-4 z-10 text-xs font-bold select-none opacity-85">
+              <span class="bg-skysoft/40 text-sky-900 px-1.5 py-0.5 rounded-md">☁️ 天空線</span>
+              <span class="bg-amber-100/80 text-amber-900 px-1.5 py-0.5 rounded-md">🌼 中間線</span>
+              <span class="bg-meadow/50 text-emerald-950 px-1.5 py-0.5 rounded-md">🌱 草地線</span>
+              <span class="bg-earth/30 text-amber-950 px-1.5 py-0.5 rounded-md">🪱 泥土線</span>
+            </div>
+
+            <canvas id="writingCanvas" width="640" height="300" class="w-full h-[270px] sm:h-[310px] block"></canvas>
+          </div>
             <div class="flex items-center gap-1.5 shrink-0">
               <button id="stepStrokeBtn" onclick="playNextSingleStroke()" class="story-btn px-2.5 py-1.5 rounded-xl bg-sunshine/60 hover:bg-sunshine border border-[#E09F3E] text-xs font-extrabold text-cocoa shadow-sm">
                 👣 單筆拆解
@@ -531,6 +569,8 @@
       currentIndex: 0,           // 目前選中的字母索引 (0 = A)
       caseMode: 'both',          // 'upper' | 'lower' | 'both'
       scaffoldStage: 1,          // 1: 看筆順示範, 2: 虛線描紅, 3: 獨立書寫
+      animSpeed: 1.0,            // 筆順動畫速度倍率 (1.0 正常, 0.55 慢速)
+      peekHint: false,           // 階段三是否開啟「偷看筆順提示」
       brushColor: '#FF597B',     // 蠟筆顏色
       isEraser: false,           // 是否為橡皮擦
       speechRate: 0.9,           // 語速 (0.9 正常, 0.6 慢速)
@@ -541,291 +581,41 @@
       currentQuiz: null,
       quizAnswered: false
     };
-
-    // 從 localStorage 讀取星星進度
-    try {
-      const savedStars = JSON.parse(localStorage.getItem('abc_forest_stars') || '[]');
-      state.completedStars = new Set(savedStars);
-    } catch (e) {
-      console.warn('無法讀取本機星星紀錄', e);
-    }
-
+// ... existing code ... -->
     // =========================================================================
-    // 2.5 標準兒童英文字母筆畫向量資料庫 (52個大小寫字形，正規化座標系統)
-    // X 軸範圍：0.0 ~ 1.0 (字元寬度框內)
-    // Y 軸基準：0 = 天空線(topY), 1 = 中虛線(midY), 2 = 草地線(baseY), 2.833 = 泥土線(bottomY)
-    // =========================================================================
-    function createArcPoints(cx, cy, rx, ry, startDeg, endDeg, steps = 28) {
-      const pts = [];
-      for (let i = 0; i <= steps; i++) {
-        const deg = startDeg + (endDeg - startDeg) * (i / steps);
-        const rad = (deg * Math.PI) / 180;
-        pts.push({
-          x: cx + rx * Math.cos(rad),
-          y: cy + ry * Math.sin(rad)
-        });
-      }
-      return pts;
-    }
-
-    const LETTER_STROKES = {
-      // --- 大寫 A - Z ---
-      'A': [
-        { desc: '從天空線向左斜畫到草地線', points: [{x: 0.50, y: 0}, {x: 0.14, y: 2}] },
-        { desc: '從天空線向右斜畫到草地線', points: [{x: 0.50, y: 0}, {x: 0.86, y: 2}] },
-        { desc: '在中間線附近從左向右畫一橫', points: [{x: 0.28, y: 1.25}, {x: 0.72, y: 1.25}] }
-      ],
-      'B': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.22, y: 0}, {x: 0.22, y: 2}] },
-        { desc: '從天空線向右畫上半圓回到中虛線', points: [{x: 0.22, y: 0}, ...createArcPoints(0.52, 0.5, 0.28, 0.5, -90, 90, 24), {x: 0.22, y: 1}] },
-        { desc: '從中虛線向右畫下半圓回到草地線', points: [{x: 0.22, y: 1}, ...createArcPoints(0.55, 1.5, 0.31, 0.5, -90, 90, 24), {x: 0.22, y: 2}] }
-      ],
-      'C': [
-        { desc: '從右上方起筆，逆時針向左畫大圓弧到草地線', points: createArcPoints(0.56, 1.0, 0.38, 1.0, -45, -315, 36) }
-      ],
-      'D': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.22, y: 0}, {x: 0.22, y: 2}] },
-        { desc: '從天空線向右畫大圓弧回到草地線', points: [{x: 0.22, y: 0}, ...createArcPoints(0.45, 1.0, 0.42, 1.0, -90, 90, 32), {x: 0.22, y: 2}] }
-      ],
-      'E': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.24, y: 0}, {x: 0.24, y: 2}] },
-        { desc: '沿著天空線從左向右畫上橫', points: [{x: 0.24, y: 0}, {x: 0.78, y: 0}] },
-        { desc: '沿著中虛線從左向右畫中橫', points: [{x: 0.24, y: 1}, {x: 0.70, y: 1}] },
-        { desc: '沿著草地線從左向右畫下橫', points: [{x: 0.24, y: 2}, {x: 0.80, y: 2}] }
-      ],
-      'F': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.25, y: 0}, {x: 0.25, y: 2}] },
-        { desc: '沿著天空線從左向右畫上橫', points: [{x: 0.25, y: 0}, {x: 0.80, y: 0}] },
-        { desc: '沿著中虛線從左向右畫中橫', points: [{x: 0.25, y: 1}, {x: 0.70, y: 1}] }
-      ],
-      'G': [
-        { desc: '從右上方逆時針畫大圓弧到中虛線', points: createArcPoints(0.54, 1.0, 0.38, 1.0, -42, -360, 38) },
-        { desc: '在中虛線上向左橫畫進去', points: [{x: 0.92, y: 1.05}, {x: 0.56, y: 1.05}] }
-      ],
-      'H': [
-        { desc: '左側從天空線垂直向下畫到草地線', points: [{x: 0.22, y: 0}, {x: 0.22, y: 2}] },
-        { desc: '右側從天空線垂直向下畫到草地線', points: [{x: 0.78, y: 0}, {x: 0.78, y: 2}] },
-        { desc: '沿著中虛線從左向右連接兩條直線', points: [{x: 0.22, y: 1}, {x: 0.78, y: 1}] }
-      ],
-      'I': [
-        { desc: '在天空線從左向右畫上橫', points: [{x: 0.28, y: 0}, {x: 0.72, y: 0}] },
-        { desc: '從中間垂直向下畫到草地線', points: [{x: 0.50, y: 0}, {x: 0.50, y: 2}] },
-        { desc: '在草地線從左向右畫下橫', points: [{x: 0.28, y: 2}, {x: 0.72, y: 2}] }
-      ],
-      'J': [
-        { desc: '從天空線向下畫到底部向左彎鉤', points: [{x: 0.66, y: 0}, {x: 0.66, y: 1.5}, ...createArcPoints(0.44, 1.5, 0.22, 0.5, 0, 170, 20)] },
-        { desc: '在天空線從左向右畫頂部橫畫', points: [{x: 0.32, y: 0}, {x: 0.84, y: 0}] }
-      ],
-      'K': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.24, y: 0}, {x: 0.24, y: 2}] },
-        { desc: '從天空線向右下方斜畫到中虛線', points: [{x: 0.78, y: 0}, {x: 0.24, y: 1.05}] },
-        { desc: '從交接處向右下方斜畫到草地線', points: [{x: 0.35, y: 0.92}, {x: 0.80, y: 2}] }
-      ],
-      'L': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.25, y: 0}, {x: 0.25, y: 2}] },
-        { desc: '沿著草地線從左向右畫底橫', points: [{x: 0.25, y: 2}, {x: 0.80, y: 2}] }
-      ],
-      'M': [
-        { desc: '左側從天空線垂直向下畫到草地線', points: [{x: 0.16, y: 0}, {x: 0.16, y: 2}] },
-        { desc: '從左上方向中間草地線斜畫下來', points: [{x: 0.16, y: 0}, {x: 0.50, y: 1.85}] },
-        { desc: '從中間草地線向右上天空線斜畫上去', points: [{x: 0.50, y: 1.85}, {x: 0.84, y: 0}] },
-        { desc: '右側從天空線垂直向下畫到草地線', points: [{x: 0.84, y: 0}, {x: 0.84, y: 2}] }
-      ],
-      'N': [
-        { desc: '左側從天空線垂直向下畫到草地線', points: [{x: 0.22, y: 0}, {x: 0.22, y: 2}] },
-        { desc: '從左上天空線向右下草地線斜畫', points: [{x: 0.22, y: 0}, {x: 0.78, y: 2}] },
-        { desc: '右側從天空線垂直向下畫到草地線', points: [{x: 0.78, y: 0}, {x: 0.78, y: 2}] }
-      ],
-      'O': [
-        { desc: '從頂部起筆，逆時針畫一個大橢圓回到起點', points: createArcPoints(0.50, 1.0, 0.36, 1.0, -90, -450, 40) }
-      ],
-      'P': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.24, y: 0}, {x: 0.24, y: 2}] },
-        { desc: '從天空線向右畫上半圓回到中虛線', points: [{x: 0.24, y: 0}, ...createArcPoints(0.54, 0.52, 0.30, 0.52, -90, 90, 26), {x: 0.24, y: 1.04}] }
-      ],
-      'Q': [
-        { desc: '從頂部逆時針畫一個大橢圓回到起點', points: createArcPoints(0.50, 1.0, 0.36, 1.0, -90, -450, 40) },
-        { desc: '在右下方畫一條斜斜的小尾巴', points: [{x: 0.58, y: 1.55}, {x: 0.88, y: 2.05}] }
-      ],
-      'R': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.24, y: 0}, {x: 0.24, y: 2}] },
-        { desc: '從天空線向右畫上半圓回到中虛線', points: [{x: 0.24, y: 0}, ...createArcPoints(0.54, 0.52, 0.30, 0.52, -90, 90, 26), {x: 0.24, y: 1.04}] },
-        { desc: '從中虛線交接處向右下斜畫到草地線', points: [{x: 0.50, y: 1.04}, {x: 0.82, y: 2}] }
-      ],
-      'S': [
-        { desc: '從右上方起筆，先向左彎再向右彎畫S曲線', points: [
-          ...createArcPoints(0.52, 0.52, 0.28, 0.52, -35, -260, 22),
-          ...createArcPoints(0.48, 1.48, 0.30, 0.52, -80, 145, 22)
-        ]}
-      ],
-      'T': [
-        { desc: '沿著天空線從左向右畫上橫', points: [{x: 0.18, y: 0}, {x: 0.82, y: 0}] },
-        { desc: '從中間垂直向下畫到草地線', points: [{x: 0.50, y: 0}, {x: 0.50, y: 2}] }
-      ],
-      'U': [
-        { desc: '從左上天空線向下畫圓弧再向上回到天空線', points: [{x: 0.22, y: 0}, ...createArcPoints(0.50, 1.35, 0.28, 0.65, 180, 0, 26), {x: 0.78, y: 0}] }
-      ],
-      'V': [
-        { desc: '從左上天空線向中間草地線斜畫下來', points: [{x: 0.18, y: 0}, {x: 0.50, y: 2}] },
-        { desc: '從中間草地線向右上天空線斜畫上去', points: [{x: 0.50, y: 2}, {x: 0.82, y: 0}] }
-      ],
-      'W': [
-        { desc: '第一筆從天空線向草地線斜畫下來', points: [{x: 0.12, y: 0}, {x: 0.31, y: 2}] },
-        { desc: '第二筆向中間天空線斜畫上去', points: [{x: 0.31, y: 2}, {x: 0.50, y: 0.35}] },
-        { desc: '第三筆再向草地線斜畫下來', points: [{x: 0.50, y: 0.35}, {x: 0.69, y: 2}] },
-        { desc: '第四筆向右上天空線斜畫上去', points: [{x: 0.69, y: 2}, {x: 0.88, y: 0}] }
-      ],
-      'X': [
-        { desc: '從左上天空線向右下草地線斜畫', points: [{x: 0.20, y: 0}, {x: 0.80, y: 2}] },
-        { desc: '從右上天空線向左下草地線斜畫交叉', points: [{x: 0.80, y: 0}, {x: 0.20, y: 2}] }
-      ],
-      'Y': [
-        { desc: '從左上天空線向中間斜畫到中虛線', points: [{x: 0.20, y: 0}, {x: 0.50, y: 1.05}] },
-        { desc: '從右上天空線向中間斜畫會合', points: [{x: 0.80, y: 0}, {x: 0.50, y: 1.05}] },
-        { desc: '從中虛線交會點垂直向下畫到草地線', points: [{x: 0.50, y: 1.05}, {x: 0.50, y: 2}] }
-      ],
-      'Z': [
-        { desc: '沿著天空線從左向右畫上橫', points: [{x: 0.20, y: 0}, {x: 0.80, y: 0}] },
-        { desc: '從右上天空線向左下草地線斜畫', points: [{x: 0.80, y: 0}, {x: 0.20, y: 2}] },
-        { desc: '沿著草地線從左向右畫下橫', points: [{x: 0.20, y: 2}, {x: 0.80, y: 2}] }
-      ],
-
-      // --- 小寫 a - z (單層標準兒童字形，含下伸至泥土線 2.833) ---
-      'a': [
-        { desc: '在草地區逆時針畫一個圓肚子', points: createArcPoints(0.46, 1.5, 0.26, 0.5, -35, -325, 32) },
-        { desc: '在右側從中虛線垂直向下畫到草地線', points: [{x: 0.72, y: 1.0}, {x: 0.72, y: 2.0}] }
-      ],
-      'b': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.28, y: 0}, {x: 0.28, y: 2.0}] },
-        { desc: '在草地區向右畫一個圓肚子', points: createArcPoints(0.52, 1.5, 0.25, 0.5, -145, 145, 32) }
-      ],
-      'c': [
-        { desc: '在草地區逆時針向左畫半圓弧', points: createArcPoints(0.54, 1.5, 0.28, 0.5, -45, -315, 30) }
-      ],
-      'd': [
-        { desc: '先在草地區逆時針畫左邊圓肚子', points: createArcPoints(0.48, 1.5, 0.25, 0.5, -35, -325, 32) },
-        { desc: '再從天空線垂直向下畫長直線到草地線', points: [{x: 0.72, y: 0}, {x: 0.72, y: 2.0}] }
-      ],
-      'e': [
-        { desc: '從草地區中間向右橫畫，再逆時針畫圓弧', points: [
-          {x: 0.25, y: 1.48},
-          {x: 0.76, y: 1.48},
-          ...createArcPoints(0.50, 1.5, 0.26, 0.5, 0, -315, 34)
-        ]}
-      ],
-      'f': [
-        { desc: '從天空線頂部向左彎鉤再垂直向下到草地線', points: [...createArcPoints(0.60, 0.35, 0.16, 0.35, -20, -180, 16), {x: 0.44, y: 2.0}] },
-        { desc: '沿著中虛線從左向右畫一橫', points: [{x: 0.26, y: 1.0}, {x: 0.68, y: 1.0}] }
-      ],
-      'g': [
-        { desc: '先在草地區逆時針畫圓肚子', points: createArcPoints(0.48, 1.5, 0.25, 0.5, -35, -325, 32) },
-        { desc: '從中虛線向下伸進泥土線再向左彎鉤', points: [{x: 0.72, y: 1.0}, {x: 0.72, y: 2.45}, ...createArcPoints(0.50, 2.45, 0.22, 0.38, 0, 165, 20)] }
-      ],
-      'h': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.28, y: 0}, {x: 0.28, y: 2.0}] },
-        { desc: '從中虛線向右彎拱門再垂直向下到草地線', points: [...createArcPoints(0.51, 1.38, 0.23, 0.38, 180, 0, 20), {x: 0.74, y: 2.0}] }
-      ],
-      'i': [
-        { desc: '在草地區從中虛線垂直向下畫到草地線', points: [{x: 0.50, y: 1.0}, {x: 0.50, y: 2.0}] },
-        { desc: '在上方點一個圓圓的小點點', points: createArcPoints(0.50, 0.62, 0.03, 0.06, 0, 360, 12) }
-      ],
-      'j': [
-        { desc: '從中虛線向下伸進泥土線並向左彎鉤', points: [{x: 0.56, y: 1.0}, {x: 0.56, y: 2.45}, ...createArcPoints(0.38, 2.45, 0.18, 0.38, 0, 165, 18)] },
-        { desc: '在上方點一個圓圓的小點點', points: createArcPoints(0.56, 0.62, 0.03, 0.06, 0, 360, 12) }
-      ],
-      'k': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.28, y: 0}, {x: 0.28, y: 2.0}] },
-        { desc: '在草地區從右上斜畫進來碰到直線', points: [{x: 0.72, y: 1.0}, {x: 0.30, y: 1.52}] },
-        { desc: '再向右下斜畫到草地線', points: [{x: 0.42, y: 1.40}, {x: 0.74, y: 2.0}] }
-      ],
-      'l': [
-        { desc: '從天空線垂直向下畫到草地線', points: [{x: 0.50, y: 0}, {x: 0.50, y: 2.0}] }
-      ],
-      'm': [
-        { desc: '在草地區從中虛線垂直向下畫到草地線', points: [{x: 0.16, y: 1.0}, {x: 0.16, y: 2.0}] },
-        { desc: '畫第一個小拱門到草地線', points: [...createArcPoints(0.33, 1.35, 0.17, 0.35, 180, 0, 16), {x: 0.50, y: 2.0}] },
-        { desc: '畫第二個小拱門到草地線', points: [...createArcPoints(0.67, 1.35, 0.17, 0.35, 180, 0, 16), {x: 0.84, y: 2.0}] }
-      ],
-      'n': [
-        { desc: '在草地區從中虛線垂直向下畫到草地線', points: [{x: 0.28, y: 1.0}, {x: 0.28, y: 2.0}] },
-        { desc: '向右畫一個小拱門再向下到草地線', points: [...createArcPoints(0.51, 1.38, 0.23, 0.38, 180, 0, 20), {x: 0.74, y: 2.0}] }
-      ],
-      'o': [
-        { desc: '在草地區逆時針畫一個圓圓的圈圈', points: createArcPoints(0.50, 1.5, 0.27, 0.5, -90, -450, 34) }
-      ],
-      'p': [
-        { desc: '從中虛線垂直向下伸進泥土線', points: [{x: 0.28, y: 1.0}, {x: 0.28, y: 2.83}] },
-        { desc: '在草地區向右畫一個圓肚子', points: createArcPoints(0.52, 1.5, 0.25, 0.5, -145, 145, 32) }
-      ],
-      'q': [
-        { desc: '先在草地區逆時針畫左邊圓肚子', points: createArcPoints(0.48, 1.5, 0.25, 0.5, -35, -325, 32) },
-        { desc: '再從中虛線垂直向下伸進泥土線', points: [{x: 0.72, y: 1.0}, {x: 0.72, y: 2.83}] }
-      ],
-      'r': [
-        { desc: '在草地區從中虛線垂直向下畫到草地線', points: [{x: 0.34, y: 1.0}, {x: 0.34, y: 2.0}] },
-        { desc: '從上方向右畫一個小彎肩', points: createArcPoints(0.53, 1.35, 0.19, 0.35, 180, 30, 18) }
-      ],
-      's': [
-        { desc: '在草地區畫一條扭扭小蛇曲線', points: [
-          ...createArcPoints(0.51, 1.26, 0.21, 0.26, -30, -260, 18),
-          ...createArcPoints(0.49, 1.74, 0.22, 0.26, -80, 145, 18)
-        ]}
-      ],
-      't': [
-        { desc: '從天空線下方垂直向下畫到草地線', points: [{x: 0.48, y: 0.35}, {x: 0.48, y: 2.0}] },
-        { desc: '沿著中虛線從左向右畫一橫', points: [{x: 0.28, y: 1.0}, {x: 0.70, y: 1.0}] }
-      ],
-      'u': [
-        { desc: '在草地區向下畫微笑圓弧再往上', points: [{x: 0.28, y: 1.0}, ...createArcPoints(0.50, 1.62, 0.22, 0.38, 180, 0, 20), {x: 0.72, y: 1.0}] },
-        { desc: '在右側從中虛線垂直向下畫到草地線', points: [{x: 0.72, y: 1.0}, {x: 0.72, y: 2.0}] }
-      ],
-      'v': [
-        { desc: '在草地區從左上向中間草地線斜畫', points: [{x: 0.24, y: 1.0}, {x: 0.50, y: 2.0}] },
-        { desc: '從中間草地線向右上斜畫到中虛線', points: [{x: 0.50, y: 2.0}, {x: 0.76, y: 1.0}] }
-      ],
-      'w': [
-        { desc: '第一筆向草地線斜畫下來', points: [{x: 0.16, y: 1.0}, {x: 0.33, y: 2.0}] },
-        { desc: '第二筆向中間斜畫上去', points: [{x: 0.33, y: 2.0}, {x: 0.50, y: 1.2}] },
-        { desc: '第三筆再向草地線斜畫下來', points: [{x: 0.50, y: 1.2}, {x: 0.67, y: 2.0}] },
-        { desc: '第四筆向右上斜畫上去', points: [{x: 0.67, y: 2.0}, {x: 0.84, y: 1.0}] }
-      ],
-      'x': [
-        { desc: '在草地區從左上向右下斜畫', points: [{x: 0.26, y: 1.0}, {x: 0.74, y: 2.0}] },
-        { desc: '在草地區從右上向左下斜畫交叉', points: [{x: 0.74, y: 1.0}, {x: 0.26, y: 2.0}] }
-      ],
-      'y': [
-        { desc: '在草地區從左上向中間草地線斜畫', points: [{x: 0.26, y: 1.0}, {x: 0.52, y: 2.0}] },
-        { desc: '從右上斜畫穿過草地線一直伸進泥土線', points: [{x: 0.76, y: 1.0}, {x: 0.34, y: 2.83}] }
-      ],
-      'z': [
-        { desc: '沿著中虛線從左向右畫上橫', points: [{x: 0.26, y: 1.0}, {x: 0.74, y: 1.0}] },
-        { desc: '從右上向左下草地線斜畫', points: [{x: 0.74, y: 1.0}, {x: 0.26, y: 2.0}] },
-        { desc: '沿著草地線從左向右畫下橫', points: [{x: 0.26, y: 2.0}, {x: 0.74, y: 2.0}] }
-      ]
-    };
-
-    // =========================================================================
-    // 3. 四線格與逐筆筆順 Canvas 核心引擎
+    // 3. 四線格與逐筆筆順 Canvas 核心引擎 (強化 GitHub Pages 穩定度與安全尺寸)
     // =========================================================================
     const canvas = document.getElementById('writingCanvas');
+    const canvasContainer = document.getElementById('canvasContainer');
     const ctx = canvas.getContext('2d');
     let isDrawing = false;
     let userStrokes = []; // 儲存使用者手寫筆畫陣列
     let currentStroke = null;
     let strokeAnimId = null;
+    let lastAnimTimestamp = 0;
 
     // 逐筆動畫控制變數
     let activeGlyphStrokes = [];  // 目前畫面上要示範的所有筆畫列表 (含大寫+小寫合併或單一字)
     let animStrokeIdx = 0;        // 目前正在畫第幾筆
     let animStrokeT = 0;          // 目前這一筆的進度 (0.0 ~ 1.0)
+    let animPauseRemaining = 0;   // 筆畫之間的停頓時間 (毫秒)
     let singleStepMode = false;   // 是否為「單筆拆解」只播一筆的模式
 
-    // 計算四線格 Y 座標 (比例制，適應各種螢幕寬度)
+    // 取得安全的畫布邏輯尺寸 (避免 GitHub Pages 首次載入時寬高為 0)
+    function getSafeCanvasSize() {
+      const rect = canvas.getBoundingClientRect();
+      const parentRect = canvasContainer ? canvasContainer.getBoundingClientRect() : { width: 0, height: 0 };
+      const w = Math.max(320, Math.round(rect.width || parentRect.width || 640));
+      const h = Math.max(240, Math.round(rect.height || parentRect.height || 300));
+      return { w, h };
+    }
+
+    // 計算四線格 Y 座標 (對應正規化座標 y=0 天空線, y=1/3 中虛線, y=2/3 草地線, y=1.0 泥土線)
     function getLineMetrics(h) {
-      const topY = h * 0.16;      // 1. 頂線 (天空線) -> 對應 normY = 0
-      const midY = h * 0.42;      // 2. 中虛線 (雲朵線) -> 對應 normY = 1
-      const baseY = h * 0.68;     // 3. 基線 (草地線) -> 對應 normY = 2
-      const bottomY = h * 0.88;   // 4. 底線 (泥土線) -> 對應 normY = 2.77
+      const topY = h * 0.15;      // 1. 頂線 (天空線)
+      const midY = h * 0.42;      // 2. 中虛線 (雲朵線)
+      const baseY = h * 0.69;     // 3. 基線 (草地線)
+      const bottomY = h * 0.90;   // 4. 底線 (泥土線)
       return { topY, midY, baseY, bottomY };
     }
 
@@ -861,7 +651,7 @@
 
       // 避開左側四線格標籤區 (左側留約 85px 空間)
       const safeLeft = Math.max(82, w * 0.14);
-      const safeWidth = w - safeLeft - 24;
+      const safeWidth = Math.max(200, w - safeLeft - 24);
 
       if (state.caseMode === 'upper') {
         const boxW = Math.min(safeWidth * 0.62, 230);
@@ -886,12 +676,12 @@
 
     // 調整 Canvas 解析度與重新繪製
     function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
+      const { w, h } = getSafeCanvasSize();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      activeGlyphStrokes = buildActiveGlyphStrokes(rect.width, rect.height);
+      activeGlyphStrokes = buildActiveGlyphStrokes(w, h);
       renderCanvas();
     }
 
@@ -1113,16 +903,28 @@
         for (let i = 0; i < activeGlyphStrokes.length; i++) {
           const st = activeGlyphStrokes[i];
           if (i < animStrokeIdx) {
-            // 已經畫完的筆畫：保留為穩重的深可可色
-            drawPartialPolyline(st.points, 1, '#5C4742', 13, false);
+            // 已經畫完的筆畫：保留為穩重的深可可墨色
+            drawPartialPolyline(st.points, 1, '#3E352F', 13, false);
           } else if (i === animStrokeIdx) {
-            // 正在繪製的這一筆：亮珊瑚粉高亮 + 起筆數字圓點 + 魔法鉛筆跟隨
-            const tip = drawPartialPolyline(st.points, animStrokeT, '#FF597B', 14, false);
+            // 正在繪製的這一筆：亮珊瑚紅高亮 + 起筆數字圓點 + 魔法鉛筆跟隨
+            const tip = drawPartialPolyline(st.points, animStrokeT, '#FF6B6B', 14, false);
             const startPt = st.points[0];
             drawNumberBadge(startPt.x, startPt.y, st.strokeInGlyph, true);
             if (tip && animStrokeT < 1) {
               drawMagicPencilCursor(tip.x, tip.y);
             }
+          } else {
+            // 尚未輪到的後續筆畫：淡灰虛線 + 起筆數字圓點 + 方向小箭頭預告
+            drawPartialPolyline(st.points, 1, '#CBD5E1', 3.5, true);
+            if (st.points.length >= 2) {
+              const midIdx = Math.min(Math.floor(st.points.length * 0.35), st.points.length - 2);
+              const pA = st.points[midIdx];
+              const pB = st.points[midIdx + 1];
+              const angle = Math.atan2(pB.y - pA.y, pB.x - pA.x);
+              drawDirectionArrow(pA.x, pA.y, angle, '#94A3B8');
+            }
+            const startPt = st.points[0];
+            drawNumberBadge(startPt.x, startPt.y, st.strokeInGlyph, false);
           }
         }
       } else if (mode === 'trace') {
@@ -1130,7 +932,7 @@
         for (const st of activeGlyphStrokes) {
           drawPartialPolyline(st.points, 1, 'rgba(33, 158, 188, 0.55)', 4, true);
 
-          // 在路徑約 30% 處畫方向小箭頭
+          // 在路徑約 35% 處畫方向小箭頭
           if (st.points.length >= 2) {
             const midIdx = Math.min(Math.floor(st.points.length * 0.35), st.points.length - 2);
             const pA = st.points[midIdx];
@@ -1169,9 +971,7 @@
 
     // 主繪製函式
     function renderCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
+      const { w, h } = getSafeCanvasSize();
 
       ctx.clearRect(0, 0, w, h);
       drawFourLines(w, h);
@@ -1180,77 +980,115 @@
         drawGuideLetter(w, h, 'demo');
       } else if (state.scaffoldStage === 2) {
         drawGuideLetter(w, h, 'trace');
+      } else if (state.scaffoldStage === 3 && state.peekHint) {
+        // 階段三「偷看筆順提示」開啟時，顯示淡淡的虛線與數字提示
+        drawGuideLetter(w, h, 'trace');
       }
-      // 階段三 (scaffoldStage === 3) 不畫底字，讓小朋友獨立挑戰！
 
       drawUserStrokes();
     }
 
-    // 更新筆順步驟文字說明
+    // 更新筆順步驟文字說明與單筆按鈕標籤
     function updateStrokeDetailBanner() {
       const detailEl = document.getElementById('strokeStepDetail');
-      if (!detailEl || !activeGlyphStrokes.length) return;
+      const stepBtn = document.getElementById('stepStrokeBtn');
+      if (!activeGlyphStrokes.length) return;
+
+      const total = activeGlyphStrokes.length;
+      const currentIdx = Math.min(animStrokeIdx, total - 1);
+      const nextStepNum = (animStrokeT >= 1 ? (currentIdx + 1) % total : currentIdx) + 1;
+
+      if (stepBtn) {
+        stepBtn.textContent = `👣 一步一步看 (第 ${nextStepNum} / ${total} 筆)`;
+      }
+
+      if (!detailEl) return;
 
       if (state.scaffoldStage === 3) {
-        detailEl.textContent = '🌟 自由書寫區：自己回憶剛才的筆順，一筆一畫寫出來！';
+        detailEl.textContent = state.peekHint
+          ? `💡 偷看提示中：跟著 ① → ② 虛線方向寫（共 ${total} 筆）`
+          : `🌟 自由書寫區：自己回憶剛才的筆順，一筆一畫寫出來！（共 ${total} 筆）`;
         return;
       }
 
-      const currentSt = activeGlyphStrokes[Math.min(animStrokeIdx, activeGlyphStrokes.length - 1)];
+      const currentSt = activeGlyphStrokes[currentIdx];
       if (state.scaffoldStage === 2) {
-        detailEl.textContent = `🖍️ 跟著藍色數字 ① → ② → ③ 虛線方向描紅喔！（共 ${activeGlyphStrokes.length} 筆）`;
+        detailEl.textContent = `🖍️ 跟著藍色數字 ① → ② 虛線方向描紅喔！（共 ${total} 筆）`;
         return;
       }
 
-      detailEl.textContent = `✏️ 【${currentSt.glyph}】第 ${currentSt.strokeInGlyph} 筆 / 共 ${currentSt.totalInGlyph} 筆：${currentSt.desc}`;
+      detailEl.textContent = `正在示範：【${currentSt.glyph}】第 ${currentSt.strokeInGlyph} 筆（${currentSt.desc}）｜共 ${total} 筆`;
     }
 
-    // 逐筆筆順示範動畫循環
+    // 逐筆筆順示範動畫循環 (採用安全 delta-time 時間差計算，確保 GitHub Pages 穩定順暢)
     function startStrokeAnimation(startIdx = 0, onlyOneStroke = false) {
-      cancelAnimationFrame(strokeAnimId);
-      const rect = canvas.getBoundingClientRect();
-      activeGlyphStrokes = buildActiveGlyphStrokes(rect.width, rect.height);
+      if (strokeAnimId) {
+        cancelAnimationFrame(strokeAnimId);
+        strokeAnimId = null;
+      }
 
+      const { w, h } = getSafeCanvasSize();
+      // 確保 Canvas 緩衝區尺寸已正確初始化
+      if (canvas.width === 0 || canvas.height === 0) {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      activeGlyphStrokes = buildActiveGlyphStrokes(w, h);
       animStrokeIdx = startIdx;
       animStrokeT = 0;
+      animPauseRemaining = 0;
       singleStepMode = onlyOneStroke;
-      let pauseCounter = 0;
+      lastAnimTimestamp = 0;
 
       updateStrokeDetailBanner();
+      renderCanvas();
 
-      function step() {
-        if (pauseCounter > 0) {
-          pauseCounter--;
+      function step(timestamp) {
+        if (state.scaffoldStage !== 1) return;
+
+        if (!lastAnimTimestamp) lastAnimTimestamp = timestamp;
+        // 限制每幀 dt 在 16ms ~ 50ms 之間，避免首幀 dt=0 停滯或切換分頁後跳躍
+        const rawDt = timestamp - lastAnimTimestamp;
+        const dt = rawDt > 0 ? Math.min(rawDt, 50) : 16.67;
+        lastAnimTimestamp = timestamp;
+
+        if (animPauseRemaining > 0) {
+          animPauseRemaining -= dt;
           renderCanvas();
           strokeAnimId = requestAnimationFrame(step);
           return;
         }
 
-        // 依筆畫長度微調速度，讓直線與大圓弧看起來一樣平順
-        animStrokeT += 0.022;
+        // 每筆標準繪製時間約 780 毫秒，乘上速度倍率 (1.0 正常 / 0.55 慢速)
+        const strokeDurationMs = 780 / state.animSpeed;
+        animStrokeT += dt / strokeDurationMs;
 
         if (animStrokeT >= 1) {
           animStrokeT = 1;
           renderCanvas();
+          updateStrokeDetailBanner();
 
           if (singleStepMode) {
-            // 單筆拆解模式：畫完這一筆就停住，方便老師講解
+            strokeAnimId = null;
             return;
           }
 
           if (animStrokeIdx < activeGlyphStrokes.length - 1) {
-            // 停頓約 22 幀 (~0.36秒) 再進入下一筆，讓小朋友看清楚停頓與起筆換位
-            pauseCounter = 22;
+            // 筆畫之間停頓 360 毫秒，讓小朋友看清楚換筆起點
+            animPauseRemaining = 360;
             animStrokeIdx++;
             animStrokeT = 0;
             updateStrokeDetailBanner();
             strokeAnimId = requestAnimationFrame(step);
             return;
           } else {
-            // 全部筆畫示範完成
+            strokeAnimId = null;
             const detailEl = document.getElementById('strokeStepDetail');
             if (detailEl) {
-              detailEl.textContent = '✨ 筆順示範完成！可以點「單筆拆解」一筆一筆看，或切換「2.虛線描紅」動手寫！';
+              detailEl.textContent = `✨ 筆順示範完成（共 ${activeGlyphStrokes.length} 筆）！點「一步一步看」可單筆拆解，或切換「2.虛線描紅」動手寫！`;
             }
             return;
           }
@@ -1263,55 +1101,37 @@
       strokeAnimId = requestAnimationFrame(step);
     }
 
-    // 單筆拆解按鈕：每次點擊播放下一筆畫
-    function playNextSingleStroke() {
-      if (state.scaffoldStage !== 1) {
-        setScaffoldStage(1, true);
-        startStrokeAnimation(0, true);
-        return;
-      }
-
-      let nextIdx = 0;
-      if (animStrokeT >= 1) {
-        nextIdx = (animStrokeIdx + 1) % activeGlyphStrokes.length;
+    // 切換筆順動畫示範速度 (正常 / 慢速)
+    function toggleAnimSpeed() {
+      const btn = document.getElementById('animSpeedBtn');
+      if (state.animSpeed === 1.0) {
+        state.animSpeed = 0.55;
+        if (btn) {
+          btn.textContent = '🐇 正常速度';
+          btn.classList.add('bg-sunshine', 'border-[#E09F3E]');
+        }
+        updateTeacherMsg('已切換成「慢速筆順示範」，小鉛筆會慢慢畫給你看喔！');
       } else {
-        nextIdx = animStrokeIdx;
+        state.animSpeed = 1.0;
+        if (btn) {
+          btn.textContent = '🐢 慢速示範';
+          btn.classList.remove('bg-sunshine', 'border-[#E09F3E]');
+        }
+        updateTeacherMsg('已切換回「正常筆順速度」！');
       }
-      startStrokeAnimation(nextIdx, true);
-    }
-
-    function replayStrokeAnimation() {
-      if (state.scaffoldStage !== 1) {
-        setScaffoldStage(1);
-      } else {
+      if (state.scaffoldStage === 1) {
         startStrokeAnimation(0, false);
       }
     }
 
-    // 滑鼠與觸控手寫事件綁定
-    function getPointerPos(e) {
-      const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
-      };
-    }
-
-    function handleStartDraw(e) {
-      // 如果在階段一按下去畫，自動切換到階段二讓小朋友直接開始描紅
-      if (state.scaffoldStage === 1) {
-        setScaffoldStage(2, false);
+    // 階段三「偷看筆順提示」開關
+    function togglePeekHint() {
+      state.peekHint = !state.peekHint;
+      const btn = document.getElementById('peekHintBtn');
+      if (btn) {
+        btn.textContent = state.peekHint ? '🙈 隱藏筆順提示' : '💡 偷看筆順提示';
       }
-      isDrawing = true;
-      const pos = getPointerPos(e);
-      currentStroke = {
-        color: state.brushColor,
-        isEraser: state.isEraser,
-        points: [pos]
-      };
-      userStrokes.push(currentStroke);
+      updateStrokeDetailBanner();
       renderCanvas();
     }
 
@@ -1590,6 +1410,7 @@
 
     function setScaffoldStage(stage, shouldClear = true) {
       state.scaffoldStage = stage;
+      state.peekHint = false;
       if (shouldClear) {
         userStrokes = [];
       }
@@ -1603,12 +1424,18 @@
         }
       });
 
+      const peekBtn = document.getElementById('peekHintBtn');
+      if (peekBtn) {
+        peekBtn.classList.toggle('hidden', stage !== 3);
+        peekBtn.textContent = '💡 偷看筆順提示';
+      }
+
       const hintText = document.getElementById('stageHintText');
       if (stage === 1) {
-        hintText.textContent = '👀 第一階段（筆順示範）：觀察紅色起筆圓點與小鉛筆怎麼一筆一畫寫出來！';
+        hintText.textContent = '👀 第一階段（看筆順示範）：觀察紅色起筆圓點與小鉛筆怎麼一筆一畫寫出來！';
         startStrokeAnimation(0, false);
       } else if (stage === 2) {
-        hintText.textContent = '🖍️ 第二階段（鷹架描紅）：跟著數字 ①、② 圓點與箭頭方向慢慢描寫！';
+        hintText.textContent = '🖍️ 第二階段（虛線描紅）：跟著數字 ①、② 圓點與箭頭方向慢慢描寫！';
         cancelAnimationFrame(strokeAnimId);
         updateStrokeDetailBanner();
         renderCanvas();
@@ -1899,8 +1726,14 @@
     // =========================================================================
     window.addEventListener('resize', resizeCanvas);
 
-    window.onload = function () {
-      // 預載語音清單
+    if (typeof ResizeObserver !== 'undefined' && canvasContainer) {
+      const ro = new ResizeObserver(() => {
+        resizeCanvas();
+      });
+      ro.observe(canvasContainer);
+    }
+
+    function initClassroomApp() {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
       }
@@ -1908,7 +1741,13 @@
       renderAlphabetGrid();
       resizeCanvas();
       selectLetter('A');
-    };
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initClassroomApp);
+    } else {
+      initClassroomApp();
+    }
   </script>
 </body>
 </html>
