@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ABC 童話森林小教室｜國小低年級英文字母與自然發音互動系統</title>
+  <!-- 載入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 載入適合兒童閱讀與書寫的圓潤字體 (包含單層 a 與 g 的 Comic Neue / Andika / Nunito 與思源黑體) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Andika:ital,wght@0,400;0,700;1,400&family=Comic+Neue:wght@700&family=Noto+Sans+TC:wght@400;500;700;900&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <!-- 載入 Canvas Confetti 做為答對時的可愛彩帶星星慶祝特效 -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: '#FFFDF5',
+            skysoft: '#8ECAE6',
+            coral: '#FF8FA3',
+            meadow: '#95D5B2',
+            sunshine: '#FFD166',
+            cocoa: '#5C4742',
+            earth: '#D4A373',
+          },
+          fontFamily: {
+            kids: ['"Andika"', '"Comic Neue"', '"Nunito"', '"Noto Sans TC"', 'sans-serif'],
+            body: ['"Nunito"', '"Noto Sans TC"', 'sans-serif'],
+          },
+          boxShadow: {
+            storybook: '0 8px 0px rgba(92, 71, 66, 0.12), 0 12px 24px rgba(92, 71, 66, 0.08)',
+            btn: '0 5px 0px rgba(92, 71, 66, 0.2)',
+            btnActive: '0 2px 0px rgba(92, 71, 66, 0.2)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #FFFDF5;
+      color: #5C4742;
+      font-family: 'Nunito', 'Noto Sans TC', sans-serif;
+      background-image:
+        radial-gradient(#FFD16644 2px, transparent 2px),
+        radial-gradient(#8ECAE633 2px, transparent 2px);
+      background-size: 40px 40px;
+      background-position: 0 0, 20px 20px;
+    }
+
+    /* 確保英文字母採用標準兒童單層 a 與單層 g */
+    .font-school {
+      font-family: 'Andika', 'Comic Neue', sans-serif;
+    }
+
+    /* 繪本風立體按鈕效果 */
+    .story-btn {
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.2s ease;
+      box-shadow: 0 4px 0 rgba(92, 71, 66, 0.18);
+    }
+    .story-btn:hover {
+      transform: translateY(-2px);
+    }
+    .story-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 rgba(92, 71, 66, 0.18);
+    }
+
+    /* 手繪虛線框 */
+    .dashed-storybook {
+      border: 3px dashed #E6CCB2;
+    }
+
+    /* 畫布防觸控捲動 */
+    #writingCanvas {
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    /* 溫和彈跳動畫 */
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(2deg); }
+    }
+    .animate-float {
+      animation: floatSlow 3.5s ease-in-out infinite;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      70% { transform: scale(1.06); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop {
+      animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    /* 自訂捲軸 */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #FFF8E7;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #FFD166;
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-12 selection:bg-sunshine selection:text-cocoa">
+
+  <!-- 頂部童話森林導覽列與星星收集冊 -->
+  <header class="sticky top-0 z-30 bg-[#FFFDF5]/95 backdrop-blur-md border-b-4 border-sunshine/60 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- 品牌標題與小熊老師頭像 -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-sunshine/40 border-2 border-sunshine flex items-center justify-center shadow-sm animate-float">
+          <!-- 可愛小熊老師 SVG -->
+          <svg viewBox="0 0 100 100" class="w-10 h-10">
+            <circle cx="25" cy="28" r="14" fill="#B07D62"/>
+            <circle cx="75" cy="28" r="14" fill="#B07D62"/>
+            <circle cx="25" cy="28" r="7" fill="#E6B8A2"/>
+            <circle cx="75" cy="28" r="7" fill="#E6B8A2"/>
+            <circle cx="50" cy="54" r="34" fill="#C68B59"/>
+            <ellipse cx="50" cy="64" rx="16" ry="12" fill="#FFF3E0"/>
+            <!-- 眼鏡 -->
+            <circle cx="37" cy="48" r="10" fill="none" stroke="#5C4742" stroke-width="3.5"/>
+            <circle cx="63" cy="48" r="10" fill="none" stroke="#5C4742" stroke-width="3.5"/>
+            <line x1="47" y1="48" x2="53" y2="48" stroke="#5C4742" stroke-width="3.5"/>
+            <!-- 眼睛與腮紅 -->
+            <circle cx="37" cy="48" r="3.5" fill="#5C4742"/>
+            <circle cx="63" cy="48" r="3.5" fill="#5C4742"/>
+            <circle cx="26" cy="58" r="5" fill="#FF8FA3" opacity="0.6"/>
+            <circle cx="74" cy="58" r="5" fill="#FF8FA3" opacity="0.6"/>
+            <ellipse cx="50" cy="59" rx="5" ry="3.5" fill="#5C4742"/>
+            <path d="M44 67 Q50 73 56 67" fill="none" stroke="#5C4742" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-black text-cocoa tracking-wide">ABC 童話森林小教室</h1>
+            <span class="hidden sm:inline-block px-2.5 py-0.5 text-xs font-bold bg-meadow/50 text-cocoa rounded-full border border-meadow">低年級互動繪本</span>
+          </div>
+          <p class="text-xs sm:text-sm text-cocoa/75 font-medium">跟著波波熊老師一起畫四線格、聽自然發音！</p>
+        </div>
+      </div>
+
+      <!-- 模式切換分頁 + 語速控制 + 星星收集進度 -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <!-- 學習模式 / 遊戲測驗模式切換 -->
+        <div class="bg-[#FFF4D2] p-1 rounded-2xl border-2 border-sunshine flex gap-1">
+          <button id="tabLearnBtn" onclick="switchMainMode('learn')" class="px-3 sm:px-4 py-1.5 rounded-xl font-bold text-sm bg-sunshine text-cocoa shadow-sm transition">
+            📖 字母小教室
+          </button>
+          <button id="tabQuizBtn" onclick="switchMainMode('quiz')" class="px-3 sm:px-4 py-1.5 rounded-xl font-bold text-sm text-cocoa/75 hover:bg-white/60 transition">
+            🎮 森林大挑戰
+          </button>
+        </div>
+
+        <!-- 語速切換按鈕 -->
+        <button id="speechRateBtn" onclick="toggleSpeechRate()" title="切換發音速度" class="story-btn px-3 py-1.5 rounded-2xl bg-skysoft/35 hover:bg-skysoft/50 border-2 border-skysoft text-xs sm:text-sm font-bold text-cocoa flex items-center gap-1.5">
+          <span id="rateIcon">🐇</span>
+          <span id="rateLabel">正常語速</span>
+        </button>
+
+        <!-- 我的星星收集冊 -->
+        <div onclick="openStarModal()" class="cursor-pointer story-btn bg-white px-3.5 py-1.5 rounded-2xl border-2 border-sunshine flex items-center gap-2">
+          <span class="text-lg">⭐</span>
+          <div class="text-left">
+            <div class="text-[11px] font-bold text-cocoa/70 leading-none">星星收集冊</div>
+            <div class="text-sm font-black text-cocoa leading-tight"><span id="starCountText">0</span> / 26 顆</div>
+          </div>
+          <div class="w-14 sm:w-20 h-2.5 bg-amber-100 rounded-full overflow-hidden border border-sunshine">
+            <div id="starProgressBar" class="h-full bg-sunshine transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主內容區 -->
+  <main class="max-w-7xl mx-auto px-4 pt-5">
+
+    <!-- 小老師對話氣泡橫幅 -->
+    <section class="mb-5 bg-white rounded-3xl p-3.5 sm:p-4 shadow-storybook border-2 border-[#F3E5AB] flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 shrink-0 rounded-full bg-coral/25 border-2 border-coral flex items-center justify-center text-2xl">
+          🐻
+        </div>
+        <div>
+          <span class="inline-block text-xs font-extrabold text-coral bg-coral/15 px-2 py-0.5 rounded-full mb-0.5">波波熊老師說：</span>
+          <p id="teacherMessage" class="text-sm sm:text-base font-bold text-cocoa">
+            歡迎來到童話森林！點選一個英文字母，我們先聽聽它的聲音，再一起在四線格裡寫寫看吧！
+          </p>
+        </div>
+      </div>
+      <button onclick="speakTeacherEncouragement()" class="story-btn shrink-0 px-3.5 py-2 rounded-2xl bg-meadow/40 hover:bg-meadow/60 border-2 border-meadow text-xs sm:text-sm font-extrabold text-cocoa flex items-center gap-1.5">
+        <span>🔊</span> 聽老師念一遍
+      </button>
+    </section>
+
+    <!-- ==================== 視圖一：字母探險與四線格教室 ==================== -->
+    <div id="learnView" class="space-y-6">
+
+      <!-- 1. 字母探險地圖 (A-Z 選擇區) -->
+      <section class="bg-white rounded-3xl p-4 sm:p-5 shadow-storybook border-2 border-skysoft/60">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🗺️</span>
+            <h2 class="text-lg sm:text-xl font-black text-cocoa">字母探險地圖</h2>
+            <span class="text-xs font-bold text-cocoa/60 hidden md:inline">（點選字母開始學習，獲得星星會亮起來喔！）</span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- 精選入門快速切換 -->
+            <div class="flex items-center gap-1 bg-cream px-2.5 py-1 rounded-2xl border border-amber-200">
+              <span class="text-xs font-bold text-cocoa/70">入門推薦：</span>
+              <button onclick="selectLetter('A')" class="px-2 py-0.5 text-xs font-black rounded-lg bg-coral/20 hover:bg-coral/40 text-cocoa">Aa</button>
+              <button onclick="selectLetter('B')" class="px-2 py-0.5 text-xs font-black rounded-lg bg-skysoft/30 hover:bg-skysoft/50 text-cocoa">Bb</button>
+              <button onclick="selectLetter('C')" class="px-2 py-0.5 text-xs font-black rounded-lg bg-meadow/30 hover:bg-meadow/50 text-cocoa">Cc</button>
+              <button onclick="selectLetter('S')" class="px-2 py-0.5 text-xs font-black rounded-lg bg-sunshine/40 hover:bg-sunshine/60 text-cocoa">Ss</button>
+              <button onclick="selectLetter('M')" class="px-2 py-0.5 text-xs font-black rounded-lg bg-purple-200/60 hover:bg-purple-200 text-cocoa">Mm</button>
+            </div>
+
+            <!-- 大小寫切換開關 -->
+            <div class="bg-skysoft/20 p-1 rounded-2xl border-2 border-skysoft flex items-center gap-1">
+              <button id="caseUpperBtn" onclick="setCaseMode('upper')" class="px-3 py-1 rounded-xl text-xs sm:text-sm font-black bg-skysoft text-cocoa shadow-sm transition">
+                大寫 A-Z
+              </button>
+              <button id="caseLowerBtn" onclick="setCaseMode('lower')" class="px-3 py-1 rounded-xl text-xs sm:text-sm font-black text-cocoa/70 hover:bg-white/60 transition">
+                小寫 a-z
+              </button>
+              <button id="caseBothBtn" onclick="setCaseMode('both')" class="px-3 py-1 rounded-xl text-xs sm:text-sm font-black text-cocoa/70 hover:bg-white/60 transition">
+                大小寫 Aa
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 26個字母按鈕網格 -->
+        <div id="alphabetGrid" class="grid grid-cols-7 sm:grid-cols-9 md:grid-cols-13 gap-2">
+          <!-- 由 JavaScript 動態生成 -->
+        </div>
+      </section>
+
+      <!-- 2. 核心互動雙欄：左側「四線格三階段手寫區」 + 右側「自然發音與生活單字卡」 -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- 左側 (7欄)：四線格描紅與手寫練習區 -->
+        <section class="lg:col-span-7 bg-white rounded-3xl p-4 sm:p-6 shadow-storybook border-2 border-meadow">
+          <!-- 標題與三階段鷹架教學切換 -->
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h2 class="text-lg sm:text-xl font-black text-cocoa flex items-center gap-2">
+                <span>✏️</span> 四線格魔法練習本
+                <span id="currentWritingBadge" class="font-school text-xl px-3 py-0.5 rounded-xl bg-sunshine/50 border border-sunshine text-cocoa">A a</span>
+              </h2>
+              <p class="text-xs text-cocoa/70 font-medium mt-0.5">藍天頂線 → 雲朵虛線 → 草地基線 → 泥土底線，注意字母住在哪一層喔！</p>
+            </div>
+
+            <!-- 鷹架三階段按鈕 -->
+            <div class="flex flex-wrap gap-1.5 bg-cream p-1.5 rounded-2xl border-2 border-meadow/60 w-full sm:w-auto justify-center">
+              <button id="stage1Btn" onclick="setScaffoldStage(1)" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-1 bg-meadow text-cocoa shadow-sm">
+                <span>👀</span> 1.看筆順
+              </button>
+              <button id="stage2Btn" onclick="setScaffoldStage(2)" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-1 text-cocoa/75 hover:bg-white">
+                <span>🖍️</span> 2.虛線描紅
+              </button>
+              <button id="stage3Btn" onclick="setScaffoldStage(3)" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-1 text-cocoa/75 hover:bg-white">
+                <span>🌟</span> 3.自己寫寫看
+              </button>
+            </div>
+          </div>
+
+          <!-- 階段提示說明條 -->
+          <div id="stageHintBanner" class="mb-3 px-3.5 py-2 rounded-2xl bg-skysoft/20 border border-skysoft/50 text-xs sm:text-sm font-bold text-cocoa flex items-center justify-between gap-2">
+            <span id="stageHintText">👀 第一步：觀察紅色起筆圓點與筆順動畫，看看字母怎麼長大！</span>
+            <button id="replayStrokeBtn" onclick="replayStrokeAnimation()" class="shrink-0 px-2.5 py-1 rounded-xl bg-white hover:bg-sunshine/40 border border-skysoft text-xs font-extrabold text-cocoa shadow-sm">
+              🔄 重播筆順
+            </button>
+          </div>
+
+          <!-- 四線格繪圖畫布容器 -->
+          <div class="relative rounded-3xl overflow-hidden border-4 border-[#E6CCB2] bg-[#FFFDF9] shadow-inner">
+            <!-- 左側童話位置小圖示提示 -->
+            <div class="pointer-events-none absolute left-2 top-0 bottom-0 flex flex-col justify-between py-4 z-10 text-xs font-bold select-none opacity-85">
+              <span class="bg-skysoft/40 text-sky-900 px-1.5 py-0.5 rounded-md">☁️ 天空線</span>
+              <span class="bg-amber-100/80 text-amber-900 px-1.5 py-0.5 rounded-md">🌼 中間線</span>
+              <span class="bg-meadow/50 text-emerald-950 px-1.5 py-0.5 rounded-md">🌱 草地線</span>
+              <span class="bg-earth/30 text-amber-950 px-1.5 py-0.5 rounded-md">🪱 泥土線</span>
+            </div>
+
+            <canvas id="writingCanvas" class="w-full h-[270px] sm:h-[310px] block"></canvas>
+          </div>
+
+          <!-- 蠟筆顏色選擇與工具列 -->
+          <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <!-- 多色蠟筆 -->
+            <div class="flex items-center gap-2 bg-cream px-3 py-2 rounded-2xl border border-amber-200">
+              <span class="text-xs font-extrabold text-cocoa/75">選蠟筆：</span>
+              <button onclick="setBrushColor('#FF597B')" class="crayon-btn w-7 h-7 rounded-full bg-[#FF597B] ring-2 ring-offset-2 ring-cocoa transition transform hover:scale-110" title="草莓紅"></button>
+              <button onclick="setBrushColor('#219EBC')" class="crayon-btn w-7 h-7 rounded-full bg-[#219EBC] transition transform hover:scale-110" title="海洋藍"></button>
+              <button onclick="setBrushColor('#2D6A4F')" class="crayon-btn w-7 h-7 rounded-full bg-[#2D6A4F] transition transform hover:scale-110" title="森林綠"></button>
+              <button onclick="setBrushColor('#8338EC')" class="crayon-btn w-7 h-7 rounded-full bg-[#8338EC] transition transform hover:scale-110" title="葡萄紫"></button>
+              <button onclick="setBrushColor('#5C4742')" class="crayon-btn w-7 h-7 rounded-full bg-[#5C4742] transition transform hover:scale-110" title="巧克力棕"></button>
+            </div>
+
+            <!-- 橡皮擦、清除、我寫好了完成按鈕 -->
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="eraserBtn" onclick="toggleEraser()" class="story-btn px-3 py-2 rounded-2xl bg-amber-100 hover:bg-amber-200 border-2 border-amber-300 text-xs sm:text-sm font-extrabold text-cocoa flex items-center gap-1">
+                <span>🧽</span> 橡皮擦
+              </button>
+              <button onclick="clearUserDrawing()" class="story-btn px-3 py-2 rounded-2xl bg-gray-100 hover:bg-gray-200 border-2 border-gray-300 text-xs sm:text-sm font-extrabold text-cocoa flex items-center gap-1">
+                <span>🗑️</span> 全部重寫
+              </button>
+              <button onclick="completeLetterPractice()" class="story-btn px-4 py-2 rounded-2xl bg-coral hover:bg-[#ff758f] border-2 border-[#e05770] text-white text-xs sm:text-sm font-black flex items-center gap-1.5">
+                <span>🎉</span> 我寫好了！領星星
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 右側 (5欄)：自然發音 (Phonics) 與生活單字繪本卡 -->
+        <section class="lg:col-span-5 bg-white rounded-3xl p-4 sm:p-6 shadow-storybook border-2 border-coral/70 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-lg sm:text-xl font-black text-cocoa flex items-center gap-2">
+                <span>🎵</span> 自然發音與單字繪本
+              </h2>
+              <span id="phonicsBadge" class="px-3 py-1 rounded-full bg-coral/20 text-coral font-black text-xs sm:text-sm">
+                Phonics: /æ/
+              </span>
+            </div>
+
+            <!-- 可愛繪本插畫主卡片 -->
+            <div class="rounded-3xl bg-gradient-to-b from-[#FFF9E6] to-[#FFF2F4] border-2 border-sunshine p-5 text-center relative overflow-hidden">
+              <!-- 左上角大寫與小寫展示 -->
+              <div class="flex items-center justify-between mb-2">
+                <div class="font-school text-5xl sm:text-6xl font-bold text-coral drop-shadow-sm leading-none">
+                  <span id="cardBigLetter">A</span><span id="cardSmallLetter" class="text-sky-600 ml-1">a</span>
+                </div>
+                <div class="text-right">
+                  <span id="cardWordZh" class="inline-block px-3 py-1 rounded-2xl bg-white/90 border border-sunshine text-base sm:text-lg font-black text-cocoa shadow-sm">
+                    蘋果
+                  </span>
+                </div>
+              </div>
+
+              <!-- 專屬可愛 SVG 單字插畫容器 -->
+              <div id="wordIllustrationBox" class="w-40 h-40 sm:w-44 sm:h-44 mx-auto my-2 rounded-3xl bg-white/85 border-2 border-dashed border-coral/40 flex items-center justify-center p-3 shadow-sm">
+                <!-- 動態注入 SVG 插畫 -->
+              </div>
+
+              <!-- 單字拼寫 (首字母高亮) -->
+              <div class="mt-2">
+                <div id="cardWordEn" class="font-school text-3xl sm:text-4xl font-bold tracking-wide text-cocoa">
+                  <span class="text-coral">A</span>pple
+                </div>
+                <p id="cardSentence" class="mt-1.5 text-xs sm:text-sm font-bold text-cocoa/80 bg-white/75 rounded-xl py-1.5 px-3 inline-block">
+                  "A is for Apple. 紅紅的大蘋果！"
+                </p>
+              </div>
+            </div>
+
+            <!-- 三大發音互動按鈕區 -->
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <button onclick="speakLetterName()" class="story-btn p-3 rounded-2xl bg-skysoft/35 hover:bg-skysoft/55 border-2 border-skysoft text-center">
+                <div class="text-xl mb-0.5">🔤</div>
+                <div class="text-xs font-black text-cocoa">聽字母名稱</div>
+                <div id="btnSubLetterName" class="text-[11px] font-bold text-cocoa/70">Letter A</div>
+              </button>
+
+              <button onclick="speakPhonicsSound()" class="story-btn p-3 rounded-2xl bg-sunshine/45 hover:bg-sunshine/70 border-2 border-sunshine text-center">
+                <div class="text-xl mb-0.5">👄</div>
+                <div class="text-xs font-black text-cocoa">聽自然發音</div>
+                <div id="btnSubPhonics" class="text-[11px] font-bold text-cocoa/70">唸法提示</div>
+              </button>
+
+              <button onclick="speakWordAndSentence()" class="story-btn p-3 rounded-2xl bg-meadow/45 hover:bg-meadow/70 border-2 border-meadow text-center">
+                <div class="text-xl mb-0.5">🍎</div>
+                <div class="text-xs font-black text-cocoa">聽單字例句</div>
+                <div id="btnSubWord" class="text-[11px] font-bold text-cocoa/70">Apple</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- 上一個 / 下一個字母快速導航 -->
+          <div class="mt-5 pt-3 border-t-2 border-dashed border-amber-200 flex items-center justify-between">
+            <button onclick="navigateLetter(-1)" class="story-btn px-4 py-2 rounded-2xl bg-cream hover:bg-sunshine/30 border-2 border-amber-200 text-xs sm:text-sm font-black text-cocoa">
+              ⬅️ 上一個字母
+            </button>
+            <span id="letterIndexIndicator" class="text-xs font-extrabold text-cocoa/60">第 1 / 26 個字母</span>
+            <button onclick="navigateLetter(1)" class="story-btn px-4 py-2 rounded-2xl bg-cream hover:bg-sunshine/30 border-2 border-amber-200 text-xs sm:text-sm font-black text-cocoa">
+              下一個字母 ➡️
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ==================== 視圖二：森林趣味互動小測驗 ==================== -->
+    <div id="quizView" class="hidden space-y-6">
+      <section class="bg-white rounded-3xl p-5 sm:p-8 shadow-storybook border-4 border-sunshine max-w-4xl mx-auto">
+        <!-- 遊戲模式選擇器 -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 mb-6 border-b-2 border-dashed border-amber-200">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-black text-cocoa flex items-center gap-2">
+              <span>🎪</span> 童話森林趣味大挑戰
+            </h2>
+            <p class="text-xs sm:text-sm text-cocoa/75 font-medium">完成小遊戲也能幫你收集星星徽章喔！</p>
+          </div>
+
+          <div class="flex gap-2 bg-cream p-1.5 rounded-2xl border-2 border-sunshine">
+            <button id="quizTypeAudioBtn" onclick="setQuizType('audio')" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black bg-coral text-white shadow-sm transition">
+              🔊 聽音辨字大挑戰
+            </button>
+            <button id="quizTypeCaseBtn" onclick="setQuizType('case')" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black text-cocoa/75 hover:bg-white transition">
+              🧩 大小寫配對樂
+            </button>
+          </div>
+        </div>
+
+        <!-- 測驗分數與連勝提示 -->
+        <div class="flex items-center justify-between mb-5 bg-[#FFF9E6] px-4 py-2.5 rounded-2xl border border-sunshine">
+          <div class="text-sm font-black text-cocoa">
+            本次答對題數：<span id="quizScoreText" class="text-coral text-lg">0</span> 題
+          </div>
+          <button onclick="generateQuizQuestion()" class="story-btn px-3 py-1 rounded-xl bg-white border border-amber-300 text-xs font-extrabold text-cocoa">
+            換一題 🎲
+          </button>
+        </div>
+
+        <!-- 題目顯示區 -->
+        <div id="quizQuestionBox" class="text-center mb-6">
+          <!-- 動態產生題目 -->
+        </div>
+
+        <!-- 3張選項卡片 -->
+        <div id="quizOptionsGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- 動態產生選項 -->
+        </div>
+
+        <!-- 小老師即時回饋區 -->
+        <div id="quizFeedbackBox" class="mt-6 hidden rounded-2xl p-4 text-center font-bold text-base animate-pop">
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- ==================== 星星收集冊彈出視窗 ==================== -->
+  <div id="starModal" class="fixed inset-0 z-50 hidden bg-cocoa/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-cream rounded-3xl max-w-2xl w-full p-6 border-4 border-sunshine shadow-2xl animate-pop max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="text-3xl">🏆</span>
+          <div>
+            <h3 class="text-xl font-black text-cocoa">我的童話星星收集冊</h3>
+            <p class="text-xs font-bold text-cocoa/70">完成四線格練習或答對測驗題目就能點亮星星！</p>
+          </div>
+        </div>
+        <button onclick="closeStarModal()" class="w-9 h-9 rounded-full bg-coral/20 hover:bg-coral/40 text-cocoa font-black text-lg flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      <div id="starAlbumGrid" class="grid grid-cols-5 sm:grid-cols-7 gap-2.5 my-4">
+        <!-- 動態生成 26 顆星星徽章 -->
+      </div>
+
+      <div class="mt-5 flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-amber-200">
+        <button onclick="resetAllStars()" class="text-xs font-bold text-cocoa/50 hover:text-coral underline">
+          清除紀錄重新挑戰
+        </button>
+        <button onclick="closeStarModal()" class="story-btn px-5 py-2 rounded-2xl bg-sunshine font-black text-cocoa text-sm">
+          繼續去探險！
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 頁尾版權與教學說明 -->
+  <footer class="max-w-7xl mx-auto px-4 mt-10 text-center text-xs text-cocoa/60 font-medium">
+    <p>🌟 ABC 童話森林小教室 — 專為國小低年級設計的四線格鷹架書寫與自然發音互動繪本系統</p>
+  </footer>
+
+  <script>
+    // =========================================================================
+    // 1. 完整 A-Z 兒童繪本資料庫 (包含單字、中文、自然發音提示、例句、可愛插畫參數)
+    // =========================================================================
+    const ALPHABET_DATA = [
+      { letter: 'A', lower: 'a', word: 'Apple', zh: '蘋果', phonics: '/æ/ 嘴巴張大「哎」', speakPhonics: 'a, a, apple', sentence: 'A is for Apple. 紅紅的大蘋果！', emoji: '🍎', bg: '#FFE5EC', color: '#FF597B', shape: 'apple' },
+      { letter: 'B', lower: 'b', word: 'Bear', zh: '小熊', phonics: '/b/ 雙唇輕彈「啵」', speakPhonics: 'b, b, bear', sentence: 'B is for Bear. 可愛的波波熊！', emoji: '🐻', bg: '#FDE4CF', color: '#B07D62', shape: 'bear' },
+      { letter: 'C', lower: 'c', word: 'Cat', zh: '小貓', phonics: '/k/ 喉嚨輕吐「可」', speakPhonics: 'c, c, cat', sentence: 'C is for Cat. 喵喵叫的小花貓！', emoji: '🐱', bg: '#FFF1E6', color: '#F4A261', shape: 'cat' },
+      { letter: 'D', lower: 'd', word: 'Dog', zh: '小狗', phonics: '/d/ 舌尖輕彈「得」', speakPhonics: 'd, d, dog', sentence: 'D is for Dog. 搖尾巴的小黃狗！', emoji: '🐶', bg: '#E2ECE9', color: '#8D6E63', shape: 'dog' },
+      { letter: 'E', lower: 'e', word: 'Elephant', zh: '大象', phonics: '/ɛ/ 微笑開口「欸」', speakPhonics: 'e, e, elephant', sentence: 'E is for Elephant. 長鼻子的大象！', emoji: '🐘', bg: '#E0F4FF', color: '#6C9BCF', shape: 'elephant' },
+      { letter: 'F', lower: 'f', word: 'Fish', zh: '小魚', phonics: '/f/ 上齒輕咬下唇吹氣', speakPhonics: 'f, f, fish', sentence: 'F is for Fish. 水裡游的小金魚！', emoji: '🐠', bg: '#CAF0F8', color: '#0096C7', shape: 'fish' },
+      { letter: 'G', lower: 'g', word: 'Giraffe', zh: '長頸鹿', phonics: '/g/ 喉嚨發音「哥」', speakPhonics: 'g, g, giraffe', sentence: 'G is for Giraffe. 脖子長長的長頸鹿！', emoji: '🦒', bg: '#FFF3B0', color: '#E09F3E', shape: 'giraffe' },
+      { letter: 'H', lower: 'h', word: 'House', zh: '小房子', phonics: '/h/ 哈氣暖手「喝」', speakPhonics: 'h, h, house', sentence: 'H is for House. 森林裡的溫暖小屋！', emoji: '🏡', bg: '#FFD6BA', color: '#E76F51', shape: 'house' },
+      { letter: 'I', lower: 'i', word: 'Ice cream', zh: '冰淇淋', phonics: '/ɪ/ 短促有力「一」', speakPhonics: 'i, i, ice cream', sentence: 'I is for Ice cream. 甜甜的冰淇淋！', emoji: '🍦', bg: '#FFCCD5', color: '#FF758F', shape: 'icecream' },
+      { letter: 'J', lower: 'j', word: 'Juice', zh: '果汁', phonics: '/dʒ/ 嘴唇微翹「居」', speakPhonics: 'j, j, juice', sentence: 'J is for Juice. 好喝的柳橙果汁！', emoji: '🧃', bg: '#FFE8D6', color: '#FB8500', shape: 'juice' },
+      { letter: 'K', lower: 'k', word: 'Kite', zh: '風箏', phonics: '/k/ 輕快爆破「可」', speakPhonics: 'k, k, kite', sentence: 'K is for Kite. 飛高高的彩色風箏！', emoji: '🪁', bg: '#E0AAFF', color: '#7B2CBF', shape: 'kite' },
+      { letter: 'L', lower: 'l', word: 'Lion', zh: '獅子', phonics: '/l/ 舌尖頂上齒齦「了」', speakPhonics: 'l, l, lion', sentence: 'L is for Lion. 森林裡的獅子王！', emoji: '🦁', bg: '#FFE5B4', color: '#D97706', shape: 'lion' },
+      { letter: 'M', lower: 'm', word: 'Monkey', zh: '猴子', phonics: '/m/ 雙唇緊閉哼聲「嗯」', speakPhonics: 'm, m, monkey', sentence: 'M is for Monkey. 愛吃香蕉的小猴子！', emoji: '🐵', bg: '#F3D5B5', color: '#9C6644', shape: 'monkey' },
+      { letter: 'N', lower: 'n', word: 'Nest', zh: '鳥巢', phonics: '/n/ 舌尖頂住鼻音「呢」', speakPhonics: 'n, n, nest', sentence: 'N is for Nest. 小鳥溫暖的家！', emoji: '🪺', bg: '#D8F3DC', color: '#40916C', shape: 'nest' },
+      { letter: 'O', lower: 'o', word: 'Octopus', zh: '章魚', phonics: '/ɑ/ 嘴巴圓圓「喔」', speakPhonics: 'o, o, octopus', sentence: 'O is for Octopus. 八隻腳的小章魚！', emoji: '🐙', bg: '#FFCAD4', color: '#F25C54', shape: 'octopus' },
+      { letter: 'P', lower: 'p', word: 'Pig', zh: '小豬', phonics: '/p/ 雙唇爆破吹氣「潑」', speakPhonics: 'p, p, pig', sentence: 'P is for Pig. 粉紅色的胖小豬！', emoji: '🐷', bg: '#FFE5EC', color: '#FF8FA3', shape: 'pig' },
+      { letter: 'Q', lower: 'q', word: 'Queen', zh: '女王', phonics: '/kw/ 圓唇發音「闊」', speakPhonics: 'q, q, queen', sentence: 'Q is for Queen. 戴皇冠的漂亮女王！', emoji: '👑', bg: '#FFF3B0', color: '#D4A373', shape: 'queen' },
+      { letter: 'R', lower: 'r', word: 'Rabbit', zh: '小兔子', phonics: '/r/ 舌尖微捲「若」', speakPhonics: 'r, r, rabbit', sentence: 'R is for Rabbit. 長耳朵的小白兔！', emoji: '🐰', bg: '#F8EDEB', color: '#E5989B', shape: 'rabbit' },
+      { letter: 'S', lower: 's', word: 'Sun', zh: '太陽', phonics: '/s/ 牙齒輕合嘶嘶聲「絲」', speakPhonics: 's, s, sun', sentence: 'S is for Sun. 微笑的暖暖大太陽！', emoji: '☀️', bg: '#FFF3B0', color: '#F59E0B', shape: 'sun' },
+      { letter: 'T', lower: 't', word: 'Tiger', zh: '老虎', phonics: '/t/ 舌尖輕彈吐氣「特」', speakPhonics: 't, t, tiger', sentence: 'T is for Tiger. 威風的小老虎！', emoji: '🐯', bg: '#FFEDD8', color: '#EA580C', shape: 'tiger' },
+      { letter: 'U', lower: 'u', word: 'Umbrella', zh: '雨傘', phonics: '/ʌ/ 短促開口「啊」', speakPhonics: 'u, u, umbrella', sentence: 'U is for Umbrella. 下雨天撐小雨傘！', emoji: '☂️', bg: '#E0F2FE', color: '#0284C7', shape: 'umbrella' },
+      { letter: 'V', lower: 'v', word: 'Violin', zh: '小提琴', phonics: '/v/ 咬下唇震動聲帶', speakPhonics: 'v, v, violin', sentence: 'V is for Violin. 拉出好聽的音樂！', emoji: '🎻', bg: '#FDE4CF', color: '#B45309', shape: 'violin' },
+      { letter: 'W', lower: 'w', word: 'Whale', zh: '鯨魚', phonics: '/w/ 嘟嘴圓唇「喔」', speakPhonics: 'w, w, whale', sentence: 'W is for Whale. 大海裡的藍鯨魚！', emoji: '🐳', bg: '#DBEAFE', color: '#2563EB', shape: 'whale' },
+      { letter: 'X', lower: 'x', word: 'Box', zh: '盒子', phonics: '/ks/ 尾音發「克斯」', speakPhonics: 'x, x, box', sentence: 'X is in Box. 裝滿禮物的驚喜盒！', emoji: '🎁', bg: '#FEF3C7', color: '#D97706', shape: 'box' },
+      { letter: 'Y', lower: 'y', word: 'Yo-yo', zh: '溜溜球', phonics: '/j/ 微笑滑音「耶」', speakPhonics: 'y, y, yo-yo', sentence: 'Y is for Yo-yo. 上下跳動的溜溜球！', emoji: '🪀', bg: '#DCFCE7', color: '#16A34A', shape: 'yoyo' },
+      { letter: 'Z', lower: 'z', word: 'Zebra', zh: '斑馬', phonics: '/z/ 像小蜜蜂嗡嗡叫', speakPhonics: 'z, z, zebra', sentence: 'Z is for Zebra. 黑白條紋的小斑馬！', emoji: '🦓', bg: '#F3F4F6', color: '#4B5563', shape: 'zebra' }
+    ];
+
+    // =========================================================================
+    // 2. 系統狀態管理 (State)
+    // =========================================================================
+    let state = {
+      currentIndex: 0,           // 目前選中的字母索引 (0 = A)
+      caseMode: 'both',          // 'upper' | 'lower' | 'both'
+      scaffoldStage: 1,          // 1: 看筆順示範, 2: 虛線描紅, 3: 獨立書寫
+      brushColor: '#FF597B',     // 蠟筆顏色
+      isEraser: false,           // 是否為橡皮擦
+      speechRate: 0.9,           // 語速 (0.9 正常, 0.6 慢速)
+      completedStars: new Set(), // 已獲得星星的字母集合
+      mainMode: 'learn',         // 'learn' | 'quiz'
+      quizType: 'audio',         // 'audio' | 'case'
+      quizScore: 0,
+      currentQuiz: null,
+      quizAnswered: false
+    };
+
+    // 從 localStorage 讀取星星進度
+    try {
+      const savedStars = JSON.parse(localStorage.getItem('abc_forest_stars') || '[]');
+      state.completedStars = new Set(savedStars);
+    } catch (e) {
+      console.warn('無法讀取本機星星紀錄', e);
+    }
+
+    // =========================================================================
+    // 3. 四線格與筆順 Canvas 核心引擎
+    // =========================================================================
+    const canvas = document.getElementById('writingCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let userStrokes = []; // 儲存使用者手寫筆畫陣列
+    let currentStroke = null;
+    let strokeAnimId = null;
+    let animProgress = 0;
+
+    // 計算四線格 Y 座標 (比例制，適應各種螢幕寬度)
+    function getLineMetrics(h) {
+      const topY = h * 0.16;      // 1. 頂線 (天空線)
+      const midY = h * 0.42;      // 2. 中虛線 (雲朵線)
+      const baseY = h * 0.68;     // 3. 基線 (草地線)
+      const bottomY = h * 0.88;   // 4. 底線 (泥土線)
+      return { topY, midY, baseY, bottomY };
+    }
+
+    // 調整 Canvas 解析度與重新繪製
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      renderCanvas();
+    }
+
+    // 繪製背景四線格 (天空-草地-泥土色帶與標準四條線)
+    function drawFourLines(w, h) {
+      const { topY, midY, baseY, bottomY } = getLineMetrics(h);
+
+      // 柔和區域色帶：幫助低年級小朋友區分字母高度
+      // 天空區 (頂線到中線)
+      ctx.fillStyle = 'rgba(142, 202, 230, 0.10)';
+      ctx.fillRect(0, topY, w, midY - topY);
+
+      // 草地區 (中線到基線 - 大部分小寫字母的家)
+      ctx.fillStyle = 'rgba(149, 213, 178, 0.16)';
+      ctx.fillRect(0, midY, w, baseY - midY);
+
+      // 泥土區 (基線到底線 - g, j, p, q, y 尾巴伸下來的地方)
+      ctx.fillStyle = 'rgba(212, 163, 115, 0.12)';
+      ctx.fillRect(0, baseY, w, bottomY - baseY);
+
+      // 1. 頂線 (天空藍實線)
+      ctx.beginPath();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#5FA8D3';
+      ctx.lineWidth = 2.5;
+      ctx.moveTo(16, topY);
+      ctx.lineTo(w - 16, topY);
+      ctx.stroke();
+
+      // 2. 中線 (暖陽橘虛線)
+      ctx.beginPath();
+      ctx.setLineDash([8, 6]);
+      ctx.strokeStyle = '#F4A261';
+      ctx.lineWidth = 2.5;
+      ctx.moveTo(16, midY);
+      ctx.lineTo(w - 16, midY);
+      ctx.stroke();
+
+      // 3. 基線 (草地綠粗實線 - 最重要的基準線)
+      ctx.beginPath();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#40916C';
+      ctx.lineWidth = 3;
+      ctx.moveTo(16, baseY);
+      ctx.lineTo(w - 16, baseY);
+      ctx.stroke();
+
+      // 4. 底線 (泥土棕實線)
+      ctx.beginPath();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#BC8A5F';
+      ctx.lineWidth = 2;
+      ctx.moveTo(16, bottomY);
+      ctx.lineTo(w - 16, bottomY);
+      ctx.stroke();
+    }
+
+    // 精準對齊四線格的標準兒童字母字模繪製
+    function drawGuideLetter(w, h, mode) {
+      const item = ALPHABET_DATA[state.currentIndex];
+      const { topY, midY, baseY } = getLineMetrics(h);
+      const unitHeight = baseY - topY; // 大寫字母標準高度
+
+      // 決定要顯示的字串
+      let displayText = item.letter + ' ' + item.lower;
+      if (state.caseMode === 'upper') displayText = item.letter;
+      if (state.caseMode === 'lower') displayText = item.lower;
+
+      ctx.save();
+      // 使用標準兒童單層 a/g 字體，精準縮放使大寫頂到 topY、基線落在 baseY
+      const fontSize = unitHeight * 1.42;
+      ctx.font = `700 ${fontSize}px "Andika", "Comic Neue", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+
+      const centerX = w * 0.54;
+
+      if (mode === 'demo') {
+        // 階段一：淡色實心底字 + 動畫筆順高亮遮罩 + 起筆提示點
+        ctx.fillStyle = 'rgba(92, 71, 66, 0.14)';
+        ctx.fillText(displayText, centerX, baseY);
+
+        // 動畫掃描顯示筆順進度 (從上到下、從左到右模擬書寫揭露)
+        ctx.save();
+        ctx.beginPath();
+        const revealHeight = (baseY - topY + 60) * animProgress;
+        ctx.rect(0, topY - 25, w, revealHeight);
+        ctx.clip();
+
+        ctx.fillStyle = '#FF597B';
+        ctx.fillText(displayText, centerX, baseY);
+        ctx.restore();
+
+        // 繪製起筆「1」號小圓點引導
+        const textWidth = ctx.measureText(displayText).width;
+        const startX = centerX - textWidth * 0.36;
+        const startY = state.caseMode === 'lower' && !['b','d','f','h','k','l','t'].includes(item.lower)
+          ? midY + 8
+          : topY + 8;
+
+        ctx.beginPath();
+        ctx.fillStyle = '#FF597B';
+        ctx.arc(startX, startY, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('1', startX, startY);
+
+      } else if (mode === 'trace') {
+        // 階段二：虛線描紅底圖
+        ctx.fillStyle = 'rgba(142, 202, 230, 0.22)';
+        ctx.fillText(displayText, centerX, baseY);
+
+        ctx.setLineDash([6, 6]);
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = 'rgba(92, 71, 66, 0.45)';
+        ctx.strokeText(displayText, centerX, baseY);
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+    }
+
+    // 繪製使用者的所有手寫蠟筆筆畫
+    function drawUserStrokes() {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      for (const stroke of userStrokes) {
+        if (stroke.points.length < 1) continue;
+        ctx.beginPath();
+        ctx.strokeStyle = stroke.isEraser ? '#FFFDF9' : stroke.color;
+        ctx.lineWidth = stroke.isEraser ? 24 : 11;
+
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        for (let i = 1; i < stroke.points.length; i++) {
+          ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 主繪製函式
+    function renderCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      ctx.clearRect(0, 0, w, h);
+      drawFourLines(w, h);
+
+      if (state.scaffoldStage === 1) {
+        drawGuideLetter(w, h, 'demo');
+      } else if (state.scaffoldStage === 2) {
+        drawGuideLetter(w, h, 'trace');
+      }
+      // 階段三 (scaffoldStage === 3) 不畫底字，讓小朋友獨立挑戰！
+
+      drawUserStrokes();
+    }
+
+    // 筆順示範動畫循環
+    function startStrokeAnimation() {
+      cancelAnimationFrame(strokeAnimId);
+      animProgress = 0;
+
+      function step() {
+        animProgress += 0.016;
+        if (animProgress >= 1) {
+          animProgress = 1;
+          renderCanvas();
+          return;
+        }
+        renderCanvas();
+        strokeAnimId = requestAnimationFrame(step);
+      }
+      strokeAnimId = requestAnimationFrame(step);
+    }
+
+    function replayStrokeAnimation() {
+      if (state.scaffoldStage !== 1) {
+        setScaffoldStage(1);
+      } else {
+        startStrokeAnimation();
+      }
+    }
+
+    // 滑鼠與觸控手寫事件綁定
+    function getPointerPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    function handleStartDraw(e) {
+      // 如果在階段一按下去畫，自動切換到階段二讓小朋友直接開始描紅
+      if (state.scaffoldStage === 1) {
+        setScaffoldStage(2, false);
+      }
+      isDrawing = true;
+      const pos = getPointerPos(e);
+      currentStroke = {
+        color: state.brushColor,
+        isEraser: state.isEraser,
+        points: [pos]
+      };
+      userStrokes.push(currentStroke);
+      renderCanvas();
+    }
+
+    function handleMoveDraw(e) {
+      if (!isDrawing || !currentStroke) return;
+      if (e.cancelable) e.preventDefault();
+      const pos = getPointerPos(e);
+      currentStroke.points.push(pos);
+      renderCanvas();
+    }
+
+    function handleEndDraw() {
+      isDrawing = false;
+      currentStroke = null;
+    }
+
+    canvas.addEventListener('mousedown', handleStartDraw);
+    canvas.addEventListener('mousemove', handleMoveDraw);
+    window.addEventListener('mouseup', handleEndDraw);
+
+    canvas.addEventListener('touchstart', handleStartDraw, { passive: false });
+    canvas.addEventListener('touchmove', handleMoveDraw, { passive: false });
+    window.addEventListener('touchend', handleEndDraw);
+
+    // =========================================================================
+    // 4. Web Speech API 英語自然發音引擎
+    // =========================================================================
+    function speakEnglish(text) {
+      if (!('speechSynthesis' in window)) {
+        updateTeacherMsg('你的瀏覽器不支援語音朗讀，但我們還是可以開心練習寫字喔！');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = state.speechRate;
+      utterance.pitch = 1.12; // 稍微活潑親切的音調
+
+      // 優先挑選自然清晰的美式英語女聲
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v => v.lang.includes('en-US') && (v.name.includes('Samantha') || v.name.includes('Google US') || v.name.includes('Jenny')))
+        || voices.find(v => v.lang.includes('en'));
+      if (preferredVoice) utterance.voice = preferredVoice;
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function speakLetterName() {
+      const item = ALPHABET_DATA[state.currentIndex];
+      speakEnglish(item.letter);
+      updateTeacherMsg(`這是字母 ${item.letter}（小寫 ${item.lower}），跟著老師一起唸：${item.letter}！`);
+    }
+
+    function speakPhonicsSound() {
+      const item = ALPHABET_DATA[state.currentIndex];
+      speakEnglish(item.speakPhonics);
+      updateTeacherMsg(`自然發音口訣：${item.phonics}！`);
+    }
+
+    function speakWordAndSentence() {
+      const item = ALPHABET_DATA[state.currentIndex];
+      speakEnglish(`${item.letter} is for ${item.word}. ${item.word}!`);
+      updateTeacherMsg(`${item.sentence}`);
+    }
+
+    function speakTeacherEncouragement() {
+      const item = ALPHABET_DATA[state.currentIndex];
+      speakEnglish(`${item.letter}! ${item.word}!`);
+    }
+
+    function toggleSpeechRate() {
+      if (state.speechRate === 0.9) {
+        state.speechRate = 0.58;
+        document.getElementById('rateIcon').textContent = '🐢';
+        document.getElementById('rateLabel').textContent = '慢速聽清楚';
+        updateTeacherMsg('已切換成「小烏龜慢速發音」，每個音都聽得清清楚楚！');
+      } else {
+        state.speechRate = 0.9;
+        document.getElementById('rateIcon').textContent = '🐇';
+        document.getElementById('rateLabel').textContent = '正常語速';
+        updateTeacherMsg('已切換回「小兔子正常語速」！');
+      }
+    }
+
+    // =========================================================================
+    // 5. 可愛 SVG 繪本插畫生成器
+    // =========================================================================
+    function generateStorybookSVG(item) {
+      // 針對最常見的入門字母提供專屬多層次手繪感 SVG，其餘搭配童話徽章與高清圖示
+      if (item.letter === 'A') {
+        return `
+          <svg viewBox="0 0 120 120" class="w-full h-full animate-float">
+            <circle cx="60" cy="64" r="46" fill="#FFE5EC"/>
+            <!-- 蘋果葉子與蒂頭 -->
+            <path d="M60 32 Q60 18 68 15" stroke="#6F4E37" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <path d="M62 25 Q78 14 84 26 Q72 34 62 25" fill="#52B788"/>
+            <!-- 紅蘋果身體 -->
+            <path d="M60 35 C42 28, 24 42, 26 68 C28 92, 46 102, 60 96 C74 102, 92 92, 94 68 C96 42, 78 28, 60 35 Z" fill="#FF597B"/>
+            <!-- 高光與可愛笑臉 -->
+            <ellipse cx="41" cy="52" rx="5" ry="10" transform="rotate(-20 41 52)" fill="#FFFFFF" opacity="0.55"/>
+            <circle cx="49" cy="66" r="3.5" fill="#5C4742"/>
+            <circle cx="71" cy="66" r="3.5" fill="#5C4742"/>
+            <circle cx="42" cy="72" r="4" fill="#FFB3C1"/>
+            <circle cx="78" cy="72" r="4" fill="#FFB3C1"/>
+            <path d="M55 73 Q60 79 65 73" stroke="#5C4742" stroke-width="3" stroke-linecap="round" fill="none"/>
+          </svg>`;
+      }
+      if (item.letter === 'B') {
+        return `
+          <svg viewBox="0 0 120 120" class="w-full h-full animate-float">
+            <circle cx="60" cy="60" r="48" fill="#FDE4CF"/>
+            <circle cx="33" cy="34" r="14" fill="#B07D62"/>
+            <circle cx="87" cy="34" r="14" fill="#B07D62"/>
+            <circle cx="33" cy="34" r="7" fill="#E6B8A2"/>
+            <circle cx="87" cy="34" r="7" fill="#E6B8A2"/>
+            <circle cx="60" cy="64" r="35" fill="#C68B59"/>
+            <ellipse cx="60" cy="74" rx="16" ry="12" fill="#FFF3E0"/>
+            <circle cx="47" cy="58" r="4" fill="#5C4742"/>
+            <circle cx="73" cy="58" r="4" fill="#5C4742"/>
+            <circle cx="38" cy="67" r="5" fill="#FF8FA3" opacity="0.65"/>
+            <circle cx="82" cy="67" r="5" fill="#FF8FA3" opacity="0.65"/>
+            <ellipse cx="60" cy="69" rx="5.5" ry="4" fill="#5C4742"/>
+            <path d="M53 77 Q60 84 67 77" stroke="#5C4742" stroke-width="3" stroke-linecap="round" fill="none"/>
+          </svg>`;
+      }
+      if (item.letter === 'C') {
+        return `
+          <svg viewBox="0 0 120 120" class="w-full h-full animate-float">
+            <circle cx="60" cy="62" r="48" fill="#FFF1E6"/>
+            <polygon points="30,48 36,20 55,38" fill="#F4A261"/>
+            <polygon points="90,48 84,20 65,38" fill="#F4A261"/>
+            <ellipse cx="60" cy="66" rx="34" ry="29" fill="#F8AD6B"/>
+            <circle cx="47" cy="62" r="4" fill="#5C4742"/>
+            <circle cx="73" cy="62" r="4" fill="#5C4742"/>
+            <polygon points="56,70 64,70 60,75" fill="#FF8FA3"/>
+            <path d="M52 78 Q60 84 68 78" stroke="#5C4742" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+            <line x1="22" y1="66" x2="36" y2="68" stroke="#5C4742" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="22" y1="74" x2="36" y2="73" stroke="#5C4742" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="84" y1="68" x2="98" y2="66" stroke="#5C4742" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="84" y1="73" x2="98" y2="74" stroke="#5C4742" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>`;
+      }
+      if (item.letter === 'S') {
+        return `
+          <svg viewBox="0 0 120 120" class="w-full h-full animate-float">
+            <circle cx="60" cy="60" r="48" fill="#FFF8D6"/>
+            <g stroke="#FFB703" stroke-width="5" stroke-linecap="round">
+              <line x1="60" y1="12" x2="60" y2="23"/>
+              <line x1="60" y1="97" x2="60" y2="108"/>
+              <line x1="12" y1="60" x2="23" y2="60"/>
+              <line x1="97" y1="60" x2="108" y2="60"/>
+              <line x1="26" y1="26" x2="34" y2="34"/>
+              <line x1="86" y1="86" x2="94" y2="94"/>
+              <line x1="94" y1="26" x2="86" y2="34"/>
+              <line x1="34" y1="86" x2="26" y2="94"/>
+            </g>
+            <circle cx="60" cy="60" r="28" fill="#FFD166" stroke="#F59E0B" stroke-width="3"/>
+            <circle cx="51" cy="56" r="3.5" fill="#5C4742"/>
+            <circle cx="69" cy="56" r="3.5" fill="#5C4742"/>
+            <circle cx="44" cy="63" r="4" fill="#FF8FA3" opacity="0.7"/>
+            <circle cx="76" cy="63" r="4" fill="#FF8FA3" opacity="0.7"/>
+            <path d="M52 66 Q60 74 68 66" stroke="#5C4742" stroke-width="3" fill="none" stroke-linecap="round"/>
+          </svg>`;
+      }
+
+      // 其他字母以精緻繪本圓形舞台 + 可愛角標 + 清晰大圖示呈現
+      return `
+        <svg viewBox="0 0 120 120" class="w-full h-full animate-float">
+          <circle cx="60" cy="60" r="48" fill="${item.bg}" />
+          <circle cx="60" cy="60" r="42" fill="none" stroke="${item.color}" stroke-width="2.5" stroke-dasharray="6 5" opacity="0.6"/>
+          <circle cx="28" cy="30" r="5" fill="#FFD166"/>
+          <circle cx="94" cy="88" r="4" fill="#95D5B2"/>
+          <text x="60" y="74" font-size="56" text-anchor="middle">${item.emoji}</text>
+        </svg>`;
+    }
+
+    // =========================================================================
+    // 6. UI 更新與互動控制
+    // =========================================================================
+    function renderAlphabetGrid() {
+      const grid = document.getElementById('alphabetGrid');
+      grid.innerHTML = '';
+
+      ALPHABET_DATA.forEach((item, idx) => {
+        const isSelected = idx === state.currentIndex;
+        const hasStar = state.completedStars.has(item.letter);
+
+        let label = item.letter;
+        if (state.caseMode === 'lower') label = item.lower;
+        if (state.caseMode === 'both') label = `${item.letter}${item.lower}`;
+
+        const btn = document.createElement('button');
+        btn.onclick = () => selectLetter(item.letter);
+        btn.className = `story-btn relative py-2 px-1 rounded-2xl font-school font-bold text-base sm:text-lg border-2 transition flex flex-col items-center justify-center ${
+          isSelected
+            ? 'bg-sunshine border-[#E09F3E] text-cocoa scale-105 ring-2 ring-coral/50'
+            : hasStar
+              ? 'bg-meadow/30 border-meadow text-cocoa hover:bg-meadow/50'
+              : 'bg-cream border-amber-200/80 text-cocoa hover:bg-skysoft/25'
+        }`;
+
+        btn.innerHTML = `
+          <span>${label}</span>
+          ${hasStar ? '<span class="absolute -top-1.5 -right-1.5 text-xs drop-shadow">⭐</span>' : ''}
+        `;
+        grid.appendChild(btn);
+      });
+    }
+
+    function selectLetter(letterChar) {
+      const idx = ALPHABET_DATA.findIndex(d => d.letter === letterChar.toUpperCase());
+      if (idx === -1) return;
+
+      state.currentIndex = idx;
+      userStrokes = [];
+      state.isEraser = false;
+      updateEraserUI();
+
+      const item = ALPHABET_DATA[idx];
+
+      // 更新四線格標題徽章
+      document.getElementById('currentWritingBadge').textContent = `${item.letter} ${item.lower}`;
+
+      // 更新右側自然發音與單字卡
+      document.getElementById('phonicsBadge').textContent = `Phonics: ${item.phonics.split(' ')[0]}`;
+      document.getElementById('cardBigLetter').textContent = item.letter;
+      document.getElementById('cardSmallLetter').textContent = item.lower;
+      document.getElementById('cardWordZh').textContent = item.zh;
+      document.getElementById('wordIllustrationBox').innerHTML = generateStorybookSVG(item);
+
+      // 首字母高亮顯示
+      const restWord = item.word.slice(1);
+      document.getElementById('cardWordEn').innerHTML = `<span class="text-coral">${item.word[0]}</span>${restWord}`;
+      document.getElementById('cardSentence').textContent = `"${item.sentence}"`;
+
+      document.getElementById('btnSubLetterName').textContent = `Letter ${item.letter}`;
+      document.getElementById('btnSubPhonics').textContent = item.phonics.split(' ')[0];
+      document.getElementById('btnSubWord').textContent = item.word;
+      document.getElementById('letterIndexIndicator').textContent = `第 ${idx + 1} / 26 個字母`;
+
+      renderAlphabetGrid();
+
+      if (state.scaffoldStage === 1) {
+        startStrokeAnimation();
+      } else {
+        renderCanvas();
+      }
+
+      // 自動朗讀字母與單字，建立聲音連結
+      speakEnglish(`${item.letter}. ${item.word}!`);
+      updateTeacherMsg(`我們來認識 ${item.letter}（${item.word} ${item.zh}）！先看看四線格筆順，再動手描寫吧！`);
+    }
+
+    function navigateLetter(step) {
+      const nextIdx = (state.currentIndex + step + 26) % 26;
+      selectLetter(ALPHABET_DATA[nextIdx].letter);
+    }
+
+    function setCaseMode(mode) {
+      state.caseMode = mode;
+      ['upper', 'lower', 'both'].forEach(m => {
+        const btn = document.getElementById(`case${m.charAt(0).toUpperCase() + m.slice(1)}Btn`);
+        if (m === mode) {
+          btn.className = 'px-3 py-1 rounded-xl text-xs sm:text-sm font-black bg-skysoft text-cocoa shadow-sm transition';
+        } else {
+          btn.className = 'px-3 py-1 rounded-xl text-xs sm:text-sm font-black text-cocoa/70 hover:bg-white/60 transition';
+        }
+      });
+      renderAlphabetGrid();
+      if (state.scaffoldStage === 1) {
+        startStrokeAnimation();
+      } else {
+        renderCanvas();
+      }
+    }
+
+    function setScaffoldStage(stage, shouldClear = true) {
+      state.scaffoldStage = stage;
+      if (shouldClear) {
+        userStrokes = [];
+      }
+
+      [1, 2, 3].forEach(s => {
+        const btn = document.getElementById(`stage${s}Btn`);
+        if (s === stage) {
+          btn.className = 'px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-1 bg-meadow text-cocoa shadow-sm';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-1 text-cocoa/75 hover:bg-white';
+        }
+      });
+
+      const hintText = document.getElementById('stageHintText');
+      if (stage === 1) {
+        hintText.textContent = '👀 第一階段（示範）：觀察紅色起筆圓點與筆順動畫，看看字母住在四線格的哪裡！';
+        startStrokeAnimation();
+      } else if (stage === 2) {
+        hintText.textContent = '🖍️ 第二階段（鷹架描紅）：沿著虛線慢慢描寫，注意不要超出草地線喔！';
+        renderCanvas();
+      } else {
+        hintText.textContent = '🌟 第三階段（獨立挑戰）：虛線躲起來囉！憑記憶在四線格中自己寫出來吧！';
+        renderCanvas();
+      }
+    }
+
+    function setBrushColor(hex) {
+      state.brushColor = hex;
+      state.isEraser = false;
+      updateEraserUI();
+
+      document.querySelectorAll('.crayon-btn').forEach(btn => {
+        btn.classList.remove('ring-2', 'ring-offset-2', 'ring-cocoa');
+        if (btn.style.backgroundColor && rgbToHex(btn.style.backgroundColor).toLowerCase() === hex.toLowerCase()) {
+          btn.classList.add('ring-2', 'ring-offset-2', 'ring-cocoa');
+        }
+      });
+    }
+
+    function rgbToHex(rgb) {
+      const res = rgb.match(/\d+/g);
+      if (!res) return rgb;
+      return '#' + res.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+    }
+
+    function toggleEraser() {
+      state.isEraser = !state.isEraser;
+      updateEraserUI();
+    }
+
+    function updateEraserUI() {
+      const btn = document.getElementById('eraserBtn');
+      if (state.isEraser) {
+        btn.classList.add('ring-2', 'ring-cocoa', 'bg-amber-300');
+      } else {
+        btn.classList.remove('ring-2', 'ring-cocoa', 'bg-amber-300');
+      }
+    }
+
+    function clearUserDrawing() {
+      userStrokes = [];
+      renderCanvas();
+      updateTeacherMsg('畫布擦乾淨囉！再試著慢慢寫一次吧！');
+    }
+
+    function completeLetterPractice() {
+      if (userStrokes.length === 0) {
+        updateTeacherMsg('你還沒在四線格上動筆寫字喔！先拿蠟筆寫寫看，再來領星星吧！');
+        return;
+      }
+
+      const item = ALPHABET_DATA[state.currentIndex];
+      awardStar(item.letter);
+      triggerCelebration();
+      speakEnglish(`Great job! You wrote ${item.letter}!`);
+      updateTeacherMsg(`太棒了！你成功寫出漂亮的 ${item.letter} ${item.lower}，獲得一顆閃亮亮的星星！`);
+    }
+
+    // =========================================================================
+    // 7. 星星收集系統與慶祝特效
+    // =========================================================================
+    function awardStar(letter) {
+      state.completedStars.add(letter);
+      try {
+        localStorage.setItem('abc_forest_stars', JSON.stringify([...state.completedStars]));
+      } catch (e) {}
+      updateStarProgressUI();
+      renderAlphabetGrid();
+    }
+
+    function updateStarProgressUI() {
+      const count = state.completedStars.size;
+      document.getElementById('starCountText').textContent = count;
+      document.getElementById('starProgressBar').style.width = `${(count / 26) * 100}%`;
+    }
+
+    function triggerCelebration() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 65,
+          spread: 70,
+          origin: { y: 0.65 },
+          colors: ['#FFD166', '#FF8FA3', '#8ECAE6', '#95D5B2']
+        });
+      }
+    }
+
+    function openStarModal() {
+      const grid = document.getElementById('starAlbumGrid');
+      grid.innerHTML = '';
+
+      ALPHABET_DATA.forEach(item => {
+        const unlocked = state.completedStars.has(item.letter);
+        const card = document.createElement('div');
+        card.className = `p-2.5 rounded-2xl border-2 text-center transition ${
+          unlocked
+            ? 'bg-sunshine/30 border-sunshine shadow-sm'
+            : 'bg-gray-100/80 border-gray-200 opacity-55'
+        }`;
+        card.innerHTML = `
+          <div class="text-2xl mb-1">${unlocked ? '⭐' : '🔒'}</div>
+          <div class="font-school font-black text-base text-cocoa">${item.letter}${item.lower}</div>
+          <div class="text-[11px] font-bold text-cocoa/70 truncate">${item.zh}</div>
+        `;
+        grid.appendChild(card);
+      });
+
+      document.getElementById('starModal').classList.remove('hidden');
+    }
+
+    function closeStarModal() {
+      document.getElementById('starModal').classList.add('hidden');
+    }
+
+    function resetAllStars() {
+      state.completedStars.clear();
+      try {
+        localStorage.removeItem('abc_forest_stars');
+      } catch (e) {}
+      updateStarProgressUI();
+      renderAlphabetGrid();
+      openStarModal();
+    }
+
+    function updateTeacherMsg(msg) {
+      const el = document.getElementById('teacherMessage');
+      el.textContent = msg;
+    }
+
+    // =========================================================================
+    // 8. 森林大挑戰 (聽音辨字 & 大小寫配對小遊戲)
+    // =========================================================================
+    function switchMainMode(mode) {
+      state.mainMode = mode;
+      const learnView = document.getElementById('learnView');
+      const quizView = document.getElementById('quizView');
+      const tabLearn = document.getElementById('tabLearnBtn');
+      const tabQuiz = document.getElementById('tabQuizBtn');
+
+      if (mode === 'learn') {
+        learnView.classList.remove('hidden');
+        quizView.classList.add('hidden');
+        tabLearn.className = 'px-3 sm:px-4 py-1.5 rounded-xl font-bold text-sm bg-sunshine text-cocoa shadow-sm transition';
+        tabQuiz.className = 'px-3 sm:px-4 py-1.5 rounded-xl font-bold text-sm text-cocoa/75 hover:bg-white/60 transition';
+        resizeCanvas();
+      } else {
+        learnView.classList.add('hidden');
+        quizView.classList.remove('hidden');
+        tabQuiz.className = 'px-3 sm:px-4 py-1.5 rounded-xl font-bold text-sm bg-sunshine text-cocoa shadow-sm transition';
+        tabLearn.className = 'px-3 sm:px-4 py-1.5 rounded-xl font-bold text-sm text-cocoa/75 hover:bg-white/60 transition';
+        generateQuizQuestion();
+      }
+    }
+
+    function setQuizType(type) {
+      state.quizType = type;
+      const audioBtn = document.getElementById('quizTypeAudioBtn');
+      const caseBtn = document.getElementById('quizTypeCaseBtn');
+
+      if (type === 'audio') {
+        audioBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black bg-coral text-white shadow-sm transition';
+        caseBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black text-cocoa/75 hover:bg-white transition';
+      } else {
+        caseBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black bg-coral text-white shadow-sm transition';
+        audioBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-black text-cocoa/75 hover:bg-white transition';
+      }
+      generateQuizQuestion();
+    }
+
+    function generateQuizQuestion() {
+      state.quizAnswered = false;
+      const feedbackBox = document.getElementById('quizFeedbackBox');
+      feedbackBox.classList.add('hidden');
+
+      // 隨機挑選 3 個不重複字母
+      const shuffled = [...ALPHABET_DATA].sort(() => Math.random() - 0.5);
+      const target = shuffled[0];
+      const options = [shuffled[0], shuffled[1], shuffled[2]].sort(() => Math.random() - 0.5);
+
+      state.currentQuiz = { target, options };
+
+      const qBox = document.getElementById('quizQuestionBox');
+      const optGrid = document.getElementById('quizOptionsGrid');
+      optGrid.innerHTML = '';
+
+      if (state.quizType === 'audio') {
+        // 題型 A：聽音辨字大挑戰
+        qBox.innerHTML = `
+          <p class="text-sm sm:text-base font-bold text-cocoa/80 mb-3">點擊下面的大喇叭聽聲音，找出正確的單字寶貝！</p>
+          <button onclick="playCurrentQuizAudio()" class="story-btn mx-auto px-6 py-4 rounded-3xl bg-skysoft hover:bg-[#72bce0] border-4 border-white shadow-lg flex items-center gap-3 text-cocoa">
+            <span class="text-3xl animate-bounce">🔊</span>
+            <div class="text-left">
+              <div class="text-base sm:text-lg font-black">點我聽題目發音</div>
+              <div class="text-xs font-bold opacity-80">再聽一次音檔</div>
+            </div>
+          </button>
+        `;
+
+        options.forEach(opt => {
+          const card = document.createElement('button');
+          card.onclick = () => checkQuizAnswer(opt.letter, card);
+          card.className = 'story-btn p-4 rounded-3xl bg-cream hover:bg-sunshine/30 border-3 border-amber-200 flex flex-col items-center text-center transition';
+          card.innerHTML = `
+            <div class="w-24 h-24 mb-2">${generateStorybookSVG(opt)}</div>
+            <div class="font-school text-2xl font-black text-cocoa">${opt.letter}${opt.lower}</div>
+            <div class="font-school text-lg font-bold text-coral">${opt.word}</div>
+            <div class="text-xs font-bold text-cocoa/65">${opt.zh}</div>
+          `;
+          optGrid.appendChild(card);
+        });
+
+        setTimeout(() => playCurrentQuizAudio(), 250);
+      } else {
+        // 題型 B：大小寫配對樂
+        const askUpper = Math.random() > 0.5;
+        const shownChar = askUpper ? target.letter : target.lower;
+        const hintDesc = askUpper ? '大寫哥哥' : '小寫弟弟';
+        const findDesc = askUpper ? '小寫弟弟' : '大寫哥哥';
+
+        qBox.innerHTML = `
+          <p class="text-sm sm:text-base font-bold text-cocoa/80 mb-2">請幫${hintDesc}找出他的「${findDesc}」好朋友！</p>
+          <div onclick="speakEnglish('${target.letter}')" class="cursor-pointer inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-sunshine/45 border-4 border-sunshine font-school text-6xl font-black text-cocoa shadow-md hover:scale-105 transition">
+            ${shownChar}
+          </div>
+        `;
+
+        options.forEach(opt => {
+          const displayOptionChar = askUpper ? opt.lower : opt.letter;
+          const card = document.createElement('button');
+          card.onclick = () => checkQuizAnswer(opt.letter, card);
+          card.className = 'story-btn p-6 rounded-3xl bg-cream hover:bg-skysoft/30 border-3 border-skysoft/70 flex flex-col items-center justify-center transition';
+          card.innerHTML = `
+            <div class="font-school text-6xl font-black text-cocoa mb-2">${displayOptionChar}</div>
+            <div class="text-xs font-bold text-cocoa/60">點我配對</div>
+          `;
+          optGrid.appendChild(card);
+        });
+
+        speakEnglish(target.letter);
+      }
+    }
+
+    function playCurrentQuizAudio() {
+      if (!state.currentQuiz) return;
+      const t = state.currentQuiz.target;
+      speakEnglish(`${t.letter}. ${t.word}.`);
+    }
+
+    function checkQuizAnswer(selectedLetter, cardEl) {
+      if (state.quizAnswered) return;
+      const target = state.currentQuiz.target;
+      const feedbackBox = document.getElementById('quizFeedbackBox');
+      feedbackBox.classList.remove('hidden');
+
+      if (selectedLetter === target.letter) {
+        state.quizAnswered = true;
+        state.quizScore += 1;
+        document.getElementById('quizScoreText').textContent = state.quizScore;
+
+        cardEl.classList.remove('bg-cream', 'border-amber-200');
+        cardEl.classList.add('bg-meadow/60', 'border-emerald-600', 'ring-4', 'ring-meadow');
+
+        feedbackBox.className = 'mt-6 rounded-2xl p-4 text-center font-bold text-base bg-meadow/40 border-2 border-meadow text-cocoa animate-pop';
+        feedbackBox.innerHTML = `
+          🎉 答對了！就是 <span class="font-school text-xl text-emerald-800">${target.letter}${target.lower} (${target.word} ${target.zh})</span>！
+          <button onclick="generateQuizQuestion()" class="ml-3 px-4 py-1.5 rounded-xl bg-sunshine text-cocoa font-black text-sm shadow-sm hover:brightness-105">下一題 ➡️</button>
+        `;
+
+        awardStar(target.letter);
+        triggerCelebration();
+        speakEnglish(`Awesome! ${target.letter} is for ${target.word}!`);
+        updateTeacherMsg(`太厲害了！你答對了 ${target.letter} - ${target.word}，星星又多一顆囉！`);
+      } else {
+        cardEl.classList.add('bg-coral/25', 'border-coral');
+        feedbackBox.className = 'mt-6 rounded-2xl p-4 text-center font-bold text-sm sm:text-base bg-coral/20 border-2 border-coral text-cocoa animate-pop';
+        feedbackBox.innerHTML = `🐻 差一點點喔！再仔細聽一次發音「${target.phonics}」，再選選看吧！`;
+        speakEnglish(`Try again! ${target.word}`);
+      }
+    }
+
+    // =========================================================================
+    // 9. 初始化應用程式
+    // =========================================================================
+    window.addEventListener('resize', resizeCanvas);
+
+    window.onload = function () {
+      // 預載語音清單
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+      }
+      updateStarProgressUI();
+      renderAlphabetGrid();
+      resizeCanvas();
+      selectLetter('A');
+    };
+  </script>
+</body>
+</html>
